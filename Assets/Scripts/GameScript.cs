@@ -27,12 +27,16 @@ public class GameScript : MonoBehaviour
 
     private GAMESTATE _currentGamestate= GAMESTATE.SETTINGS; //Actual reference to current game state
 
+
+    private bool _firstPlayersTurn = false;
+
     //----------------------------FUNCTIONS-------------------------------------
     void Awake(){ //when this gameobject is awoken do ...
          _canvas = GameObject.FindGameObjectWithTag("Canvas"); //give canvas reference to the canvas obj
     }
     void Update(){
         if(_currentGamestate == GAMESTATE.SETTINGS){ //if you are on the board settings menu
+            _boardSize = (int) _boardSizeSlider.value; //make board the size that the slider is at.
             _boardSizeText.text = (_boardSizeSlider.value).ToString(); //make board size text on board settings panel update
         }
     }
@@ -44,53 +48,46 @@ public class GameScript : MonoBehaviour
 
     }
     private void CreateGame(){
-        //create dictionary of ROW of buttons and set their placement, name, and other
+        
         for(int b = 0; b<_boardSize + 1; b++){
             for(int i = 0; i < _boardSize ; i++){
-                Button button =  Instantiate(cornerButton, Vector3.zero, Quaternion.identity) as Button; //make new button from prefab
-                var rectTransform = button.GetComponent<RectTransform>(); //get reference of buttons rectTransform
-                rectTransform.SetParent(_backgroundPanel.transform); //make button child of background panel obj
-                rectTransform.offsetMin = Vector2.zero; //make off set 0
-                rectTransform.offsetMax = Vector2.zero;//make off set 0
-                rectTransform.sizeDelta = new Vector2(82,20); //set buttons size
+                //create dictionary of ROW of buttons and set their placement, name, and other
+                Button rButton =  Instantiate(cornerButton, Vector3.zero, Quaternion.identity) as Button; //make new rButton from prefab
+                var rectTransformRow = rButton.GetComponent<RectTransform>(); //get reference of buttons rectTransformRow
+                rectTransformRow.SetParent(_backgroundPanel.transform); //make rButton child of background panel obj
+                rectTransformRow.sizeDelta = new Vector2(82,20); //set buttons size
                 //set buttons position on background panel obj
-                rectTransform.position = new Vector2(_backgroundPanel.GetComponent<RectTransform>().rect.width/2 + (_boardSize/2*80) - i * 80,_backgroundPanel.GetComponent<RectTransform>().rect.height/2 + (_boardSize/2*80) + 35 - b * 80);
-                button.name = b.ToString() + i.ToString(); //set name of button
-                _gameBoard.rowButtons.Add(button.name, button); //add button to dictionary with button name
-               // _gameBoard.rowButtons[button.name].onClick.AddListener (() => ButtonClicked(button, true)); //add listener to button so it knows when its clicked and which is clicked.
-                _gameBoard.rowClicked.Add(button.name,false); //add if button is clicked to dictionary with button name
-            }
-        }
-        //create dictionary of COLUMNS of buttons and set their placement, name, and other
-          for(int b = 0; b<_boardSize ; b++){
-            for(int i = 0; i < _boardSize + 1; i++){
-                Button button = Instantiate(cornerButton, Vector3.zero, Quaternion.identity) as Button; //make new button from prefab
-                var rectTransform = button.GetComponent<RectTransform>(); //get reference of buttons rectTransform
-                rectTransform.SetParent(_backgroundPanel.transform);//make button child of canvas
-                rectTransform.offsetMin = Vector2.zero;//make off set 0
-                rectTransform.offsetMax = Vector2.zero;//make off set 0
-                rectTransform.sizeDelta = new Vector2(82,20); //set buttons size
+                rectTransformRow.position = new Vector2(_backgroundPanel.GetComponent<RectTransform>().rect.width/2 + (_boardSize/2*80) - i * 80,_backgroundPanel.GetComponent<RectTransform>().rect.height/2 + (_boardSize/2*80) + 35 - b * 80);
+                rButton.name = (b.ToString() + i.ToString() + "r"); //set name of rButton
+                _gameBoard.rowButtons.Add(rButton.name, rButton); //add rButton to dictionary with rButton name
+                _gameBoard.rowButtons[rButton.name].onClick.AddListener (() => ButtonClicked(rButton, true)); //add listener to rButton so it knows when its clicked and which is clicked. ************ PASSES TRUE SO IT KNOWS ITS A ROW
+                _gameBoard.rowClicked.Add(rButton.name,false); //add if rButton is clicked to dictionary with rButton name
+
+
+                //create dictionary of COLUMNS of buttons and set their placement, name, and other (reversed b & i)**********
+                Button cButton = Instantiate(cornerButton, Vector3.zero, Quaternion.identity) as Button; //make new cButton from prefab
+                var rectTransformCol = cButton.GetComponent<RectTransform>(); //get reference of buttons rectTransformCol
+                rectTransformCol.SetParent(_backgroundPanel.transform);//make cButton child of canvas
+                rectTransformCol.sizeDelta = new Vector2(82,20); //set buttons size
                 //set buttons position on canvas
-                rectTransform.position = new Vector2(_backgroundPanel.GetComponent<RectTransform>().rect.width/2 + (_boardSize/2*80) + 35 - i * 80,_backgroundPanel.GetComponent<RectTransform>().rect.height/2 + (_boardSize/2*80) - b * 80);
+                rectTransformCol.position = new Vector2(_backgroundPanel.GetComponent<RectTransform>().rect.width/2 + (_boardSize/2*80) + 35 - b * 80,_backgroundPanel.GetComponent<RectTransform>().rect.height/2 + (_boardSize/2*80) - i * 80);
                 //set rotation of buttons.
-                rectTransform.eulerAngles = new Vector3(rectTransform.transform.eulerAngles.x, rectTransform.transform.eulerAngles.y, 90);
-                button.name = b.ToString() + i.ToString();//set name of button
-                _gameBoard.colButtons.Add(button.name, button); //add button to dictionary with button name
-                //_gameBoard.colButtons[b.ToString() + i.ToString()].onClick.AddListener (() => ButtonClicked(button, false));//add listener to button so it knows when its clicked and which is clicked.
-                _gameBoard.colClicked.Add(button.name,false);//add if button is clicked to dictionary with button name
+                rectTransformCol.eulerAngles = new Vector3(rectTransformCol.transform.eulerAngles.x, rectTransformCol.transform.eulerAngles.y, 90);
+                cButton.name = (i.ToString() + b.ToString()+ "c");//set name of cButton
+                _gameBoard.colButtons.Add(cButton.name, cButton); //add cButton to dictionary with cButton name
+                _gameBoard.colButtons[cButton.name].onClick.AddListener (() => ButtonClicked(cButton, false));//add listener to cButton so it knows when its clicked and which is clicked. ************ PASSES FALSE SO IT KNOWS ITS A COL
+                _gameBoard.colClicked.Add(cButton.name,false);//add if cButton is clicked to dictionary with cButton name
             }
         }
         //create list of BOXES and set their placement, name, and other
         for(int b = 0; b<_boardSize; b++){
             for(int i = 0; i < _boardSize ; i++){
-                if(_gameBoard.colButtons.ContainsKey(b.ToString() + (i + 1).ToString()) && _gameBoard.rowButtons.ContainsKey((b + 1).ToString() + i .ToString())){ //check that the boxes are within the correct buttons.
+                if(_gameBoard.colButtons.ContainsKey(b.ToString() + (i + 1).ToString()+ "c") && _gameBoard.rowButtons.ContainsKey((b + 1).ToString() + i .ToString() + "r")){ //check that the boxes are within the correct buttons. (contains key searches dictionary for if that key exists)
                     GameObject _box = Instantiate(box, Vector3.zero, Quaternion.identity) as GameObject;//make box obj from prefab
                     var _rectTransform = _box.GetComponent<RectTransform>(); //get reference of buttons rectTransform
                     _rectTransform.SetParent(_backgroundPanel.transform);//make button child of canvas
-                    _rectTransform.offsetMin = Vector2.zero;//make off set 0
-                    _rectTransform.offsetMax = Vector2.zero;//make off set 0
                     _rectTransform.SetAsFirstSibling(); //make sure box is behind buttons
-                    _rectTransform.sizeDelta = new Vector2(75,75);//set buttons size
+                    _rectTransform.sizeDelta = new Vector2(75,75);//set Boxes size
                     //set buttons position on canvas
                     _rectTransform.position = new Vector2(_backgroundPanel.GetComponent<RectTransform>().rect.width/2 + (_boardSize/2*80) - i * 80,_backgroundPanel.GetComponent<RectTransform>().rect.height/2 + (_boardSize/2*80) - b * 80);;
                     //add buttons that are surrounding boxes to list within the box prefab.
@@ -99,12 +96,35 @@ public class GameScript : MonoBehaviour
                    // _box.GetComponent<BoxScript>().boxLines(colButtons[b.ToString() + i.ToString()]);
                    // _box.GetComponent<BoxScript>().boxLines(colButtons[b.ToString() + (i + 1).ToString()]);
                    // _box.tag = "unchecked";//tag box that it hasnt been taken for points.
-                    _box.name = (b + i).ToString(); //name box given x,y coords on board.
+                    _box.name = (b.ToString() + i.ToString() + "b"); //name box given x,y coords on board.
                     //boxes.Add(_box); //add box to boxes list.
                 }
             }
         }
         //ggText.GetComponent<RectTransform>().SetAsLastSibling(); // make the gg text be on top of everything else. 
+    }
+
+    public void ButtonClicked(Button _b, bool _row){ //function is called when row or column button is pressed, passes button pressed & bool for whether it is a row or col button.
+        bool alreadyClicked = false; //temp holds if it has been pressed in the past
+        if(_row && _gameBoard.rowClicked[_b.name] != true){  //check it it is a ROW button && if it HASNT been pressed.
+            _gameBoard.rowClicked[_b.name] = true;
+        }else if(!_row && _gameBoard.colClicked[_b.name] != true){//check it it is a COL button && if  it HASNT been pressed.
+            _gameBoard.colClicked[_b.name] = true;
+        }else{ //tells script that this button has already been pressed in the past
+            alreadyClicked = true;
+        }
+        if(!alreadyClicked){ //if button hasnt been clicked then change the buttons colour and check if the box needs to be filled in.
+             if(_firstPlayersTurn){
+                _b.GetComponent<Image>().color = Color.blue;
+            }else if(!_firstPlayersTurn){
+                _b.GetComponent<Image>().color = Color.red;
+            }
+            ColorBlock m_tempColor = _b.GetComponent<Button>().colors; //make temporary color block to change alpha of button to 100%
+            m_tempColor.normalColor = _b.GetComponent<Image>().color; //set normal color to what color button should be.
+            _b.GetComponent<Button>().colors = m_tempColor; //set buttons color block to temp color block
+            
+            //CheckBoxes(); //check if box needs to be filled in. 
+        }
     }
 
     // -------------------------CLASSES ---------------------------------------
