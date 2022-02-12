@@ -859,7 +859,7 @@ GameObject:
   - component: {fileID: 785869363}
   - component: {fileID: 785869362}
   m_Layer: 5
-  m_Name: Background
+  m_Name: BackgroundPanel
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -922,6 +922,56 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 785869360}
   m_CullTransparentMesh: 1
+--- !u!1 &871195789
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 871195791}
+  - component: {fileID: 871195790}
+  m_Layer: 0
+  m_Name: GameplayManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &871195790
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 871195789}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b250bc6e501b5a242bb1c3ff63ff7504, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _boardSize: 4
+  cornerButton: {fileID: 8994256353831871306, guid: 6d6fd3cc780576c4d8ca65b271e186b9, type: 3}
+  box: {fileID: 4942335531211851540, guid: 30f098f11fe96564c9dc48576dae5fd8, type: 3}
+  _backgroundPanel: {fileID: 785869360}
+  _boardSettingsPanel: {fileID: 202129646}
+  _boardSizeSlider: {fileID: 1832027767}
+  _boardSizeText: {fileID: 1602662012}
+--- !u!4 &871195791
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 871195789}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 882.37866, y: 184.48912, z: -54.86364}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 3
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1008842415
 GameObject:
   m_ObjectHideFlags: 0
@@ -1553,7 +1603,7 @@ GameObject:
   - component: {fileID: 1618533285}
   m_Layer: 5
   m_Name: Canvas
-  m_TagString: Untagged
+  m_TagString: Canvas
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -1802,10 +1852,10 @@ MonoBehaviour:
   m_FillRect: {fileID: 1562685929}
   m_HandleRect: {fileID: 1427654809}
   m_Direction: 0
-  m_MinValue: 0
-  m_MaxValue: 1
-  m_WholeNumbers: 0
-  m_Value: 0
+  m_MinValue: 2
+  m_MaxValue: 8
+  m_WholeNumbers: 1
+  m_Value: 5
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -1891,7 +1941,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1835693061}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 871195790}
+        m_TargetAssemblyTypeName: GameScript, Assembly-CSharp
+        m_MethodName: GameStartButton
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &1835693061
 MonoBehaviour:
   m_ObjectHideFlags: 0
