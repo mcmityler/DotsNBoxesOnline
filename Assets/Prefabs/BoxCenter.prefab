@@ -11,9 +11,10 @@ GameObject:
   - component: {fileID: 3255652888094947599}
   - component: {fileID: 263422978005757578}
   - component: {fileID: 6628567743960820367}
+  - component: {fileID: -3271257428228224120}
   m_Layer: 5
   m_Name: BoxCenter
-  m_TagString: Untagged
+  m_TagString: unchecked
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -75,3 +76,16 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &-3271257428228224120
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4942335531211851540}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5346a3baf253cef408431eb54b8eec53, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  buttonList: []
