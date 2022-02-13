@@ -17,18 +17,23 @@ public class GameScript : MonoBehaviour
     [SerializeField] private GameObject _boardSettingsPanel; //reference to panel where you select board size.
     [SerializeField] private Slider _boardSizeSlider; //Reference to slider on board size panel.
     [SerializeField] private Text _boardSizeText;//Reference to size text on board size panel.
-
-    private GameBoard _gameBoard = new GameBoard();
+    private bool _firstPlayersTurn = false; //Whos turn is it?
+    [SerializeField] private Text _Player1ScoreText, _Player2ScoreText, _Player1NameText, _Player2NameText; //reference to  player 1 & 2 score text boxes and Player 1 and 2 Name textboxes
+    [SerializeField] private InputField _Player1InputText, _Player2InputText; //reference to player 1 and 2 input boxes
+    private string _localP1Name, _localP2Name; //what are the local entered names
+    private bool _localGame = true; //are you playing a local game 
+    private int _p1Score, _p2Score = 0; //player 1 and 2 scores
+    private GameBoard _gameBoard = new GameBoard(); // gameboard is every button, box and if the buttons have been clicked yet.
     private enum GAMESTATE { //Enum for game state / what point the game is currently at.
         SETTINGS, 
         PLAYING, 
         GAMEOVER
     };
 
-    private GAMESTATE _currentGamestate= GAMESTATE.SETTINGS; //Actual reference to current game state
+    private GAMESTATE _currentGamestate = GAMESTATE.SETTINGS; //Actual reference to current game state
 
 
-    private bool _firstPlayersTurn = false;
+
 
     //----------------------------FUNCTIONS-------------------------------------
     void Awake(){ //when this gameobject is awoken do ...
@@ -39,13 +44,27 @@ public class GameScript : MonoBehaviour
             _boardSize = (int) _boardSizeSlider.value; //make board the size that the slider is at.
             _boardSizeText.text = (_boardSizeSlider.value).ToString(); //make board size text on board settings panel update
         }
+        if(_currentGamestate == GAMESTATE.PLAYING){ //if you are on the board settings menu
+            _Player1ScoreText.text = _p1Score.ToString();
+            _Player2ScoreText.text = _p2Score.ToString();
+        }
     }
     public void GameStartButton(){ //when you click the start button on board setting screen
         _boardSettingsPanel.SetActive(false); //make panel disappear.
         _boardSize = (int) _boardSizeSlider.value; //make board the size that the slider is at.
         CreateGame(); //create the game board with the size in slider
         _currentGamestate = GAMESTATE.PLAYING;//Change gamestate to playing game
-
+        if(_localGame){//if you entered a name and its a local game make player name appear in text boxes
+            if(_Player1InputText.text != ""){  
+                _localP1Name = _Player1InputText.text;
+                _Player1NameText.text = _localP1Name + ": ";
+                
+            }
+            if(_Player2InputText.text != ""){ 
+                _localP2Name = _Player2InputText.text;
+                _Player2NameText.text = _localP2Name + ": ";
+            }
+        }
     }
     private void CreateGame(){
         
@@ -101,29 +120,28 @@ public class GameScript : MonoBehaviour
                 }
             }
         }
-        //ggText.GetComponent<RectTransform>().SetAsLastSibling(); // make the gg text be on top of everything else. 
     }
 
     
 
-    public void ButtonClicked(Button _b, bool _row){ //function is called when row or column button is pressed, passes button pressed & bool for whether it is a row or col button.
-        bool alreadyClicked = false; //temp holds if it has been pressed in the past
-        if(_row && _gameBoard.rowClicked[_b.name] != true){  //check it it is a ROW button && if it HASNT been pressed.
-            _gameBoard.rowClicked[_b.name] = true;
-        }else if(!_row && _gameBoard.colClicked[_b.name] != true){//check it it is a COL button && if  it HASNT been pressed.
-            _gameBoard.colClicked[_b.name] = true;
+    public void ButtonClicked(Button m_b, bool m_row){ //function is called when row or column button is pressed, passes button pressed & bool for whether it is a row or col button.
+        bool m_alreadyClicked = false; //temp holds if it has been pressed in the past
+        if(m_row && _gameBoard.rowClicked[m_b.name] != true){  //check it it is a ROW button && if it HASNT been pressed.
+            _gameBoard.rowClicked[m_b.name] = true;
+        }else if(!m_row && _gameBoard.colClicked[m_b.name] != true){//check it it is a COL button && if  it HASNT been pressed.
+            _gameBoard.colClicked[m_b.name] = true;
         }else{ //tells script that this button has already been pressed in the past
-            alreadyClicked = true;
+            m_alreadyClicked = true;
         }
-        if(!alreadyClicked){ //if button hasnt been clicked then change the buttons colour and check if the box needs to be filled in.
+        if(!m_alreadyClicked){ //if button hasnt been clicked then change the buttons colour and check if the box needs to be filled in.
              if(_firstPlayersTurn){
-                _b.GetComponent<Image>().color = Color.blue;
+                m_b.GetComponent<Image>().color = Color.blue;
             }else if(!_firstPlayersTurn){
-                _b.GetComponent<Image>().color = Color.red;
+                m_b.GetComponent<Image>().color = Color.red;
             }
-            ColorBlock m_tempColor = _b.GetComponent<Button>().colors; //make temporary color block to change alpha of button to 100%
-            m_tempColor.normalColor = _b.GetComponent<Image>().color; //set normal color to what color button should be.
-            _b.GetComponent<Button>().colors = m_tempColor; //set buttons color block to temp color block
+            ColorBlock m_tempColor = m_b.GetComponent<Button>().colors; //make temporary color block to change alpha of button to 100%
+            m_tempColor.normalColor = m_b.GetComponent<Image>().color; //set normal color to what color button should be.
+            m_b.GetComponent<Button>().colors = m_tempColor; //set buttons color block to temp color block
 
             CheckBoxes(); //check if box needs to be filled in. 
         }
@@ -165,9 +183,9 @@ public class GameScript : MonoBehaviour
                     m_pointGained = true; //point is gained
                     //add points to whoevers turns score.
                     if(_firstPlayersTurn){ 
-                        //p1Score++;
+                        _p1Score++;
                     }else if(!_firstPlayersTurn){
-                        //p2Score++;
+                        _p2Score++;
                     }
                     
                 }
