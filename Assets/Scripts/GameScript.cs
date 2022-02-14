@@ -12,22 +12,26 @@ public class GameScript : MonoBehaviour
     public Button cornerButton; //reference to the prefab for each button.
     public GameObject box; //reference to prefab for the middle of the button (what changes colour to show who scored the point). also holds what buttons center takes to change colour.
     private GameObject _canvas; //reference to canvas obj
-    [SerializeField] private GameObject _backgroundPanel; //reference to background panel obj
+    [SerializeField] private GameObject _backgroundObj; //reference to background panel obj
 
-    [SerializeField] private GameObject _boardSettingsPanel; //reference to panel where you select board size.
+    [SerializeField] private GameObject _boardSettingsObj, _localPlayerNamesObj; //reference to panel where you select board size. and the obj where the player enters their names if its a local game
+    [SerializeField] private GameObject _winnerObj; //reference to obj that displays the games winner and the restart button
+    [SerializeField] private Text _winnterText; //refference to gameobject that displays who won the game.
     [SerializeField] private Slider _boardSizeSlider; //Reference to slider on board size panel.
     [SerializeField] private Text _boardSizeText;//Reference to size text on board size panel.
     private bool _firstPlayersTurn = false; //Whos turn is it?
     [SerializeField] private Text _Player1ScoreText, _Player2ScoreText, _Player1NameText, _Player2NameText; //reference to  player 1 & 2 score text boxes and Player 1 and 2 Name textboxes
     [SerializeField] private InputField _Player1InputText, _Player2InputText; //reference to player 1 and 2 input boxes
-    private string _localP1Name, _localP2Name; //what are the local entered names
+    private string _localP1Name = "Player 1"; //what are the local entered p1 name
+    private string  _localP2Name = "Player 2"; //what are the local entered p2 name
     private bool _localGame = true; //are you playing a local game 
     private int _p1Score, _p2Score = 0; //player 1 and 2 scores
     private GameBoard _gameBoard = new GameBoard(); // gameboard is every button, box and if the buttons have been clicked yet.
     private enum GAMESTATE { //Enum for game state / what point the game is currently at.
         SETTINGS, 
         PLAYING, 
-        GAMEOVER
+        GAMEOVER,
+        RESTART
     };
 
     private GAMESTATE _currentGamestate = GAMESTATE.SETTINGS; //Actual reference to current game state
@@ -44,13 +48,38 @@ public class GameScript : MonoBehaviour
             _boardSize = (int) _boardSizeSlider.value; //make board the size that the slider is at.
             _boardSizeText.text = (_boardSizeSlider.value).ToString(); //make board size text on board settings panel update
         }
-        if(_currentGamestate == GAMESTATE.PLAYING){ //if you are on the board settings menu
+        if(_currentGamestate == GAMESTATE.PLAYING){ //if you are in the game play loop
             _Player1ScoreText.text = _p1Score.ToString();
             _Player2ScoreText.text = _p2Score.ToString();
         }
+        if (_currentGamestate == GAMESTATE.GAMEOVER){
+            DisplayWinner();
+            
+        }
+    }
+    public void RestartButton(){
+        
+         foreach(GameObject _b in GameObject.FindGameObjectsWithTag("button")){ //find all objects with the tag button to delete them from the scene
+            Destroy(_b);
+        }
+        foreach(GameObject _box in _gameBoard.boxes){ ///find all boxes and destroy them
+            Destroy(_box);
+        }
+        _gameBoard = new GameBoard();
+
+        _p1Score = 0; //set CURRENT game scores to 0
+        _p2Score = 0;//set CURRENT game scores to 0
+        _Player1ScoreText.text = _p1Score.ToString();
+        _Player2ScoreText.text = _p2Score.ToString(); 
+        _winnerObj.SetActive(false); //make gg text disappear.
+        if(_localGame){
+            _currentGamestate = GAMESTATE.SETTINGS;
+            _boardSettingsObj.SetActive(true); 
+            _localPlayerNamesObj.SetActive(false);
+        }
     }
     public void GameStartButton(){ //when you click the start button on board setting screen
-        _boardSettingsPanel.SetActive(false); //make panel disappear.
+        _boardSettingsObj.SetActive(false); //make panel disappear.
         _boardSize = (int) _boardSizeSlider.value; //make board the size that the slider is at.
         CreateGame(); //create the game board with the size in slider
         _currentGamestate = GAMESTATE.PLAYING;//Change gamestate to playing game
@@ -67,16 +96,20 @@ public class GameScript : MonoBehaviour
         }
     }
     private void CreateGame(){
-        
+        if((Random.Range(0, 2) == 0)){ //randomize who gets to go first, randoms a number 0 or 1 to choose turns.
+            _firstPlayersTurn = true;
+        }else{
+            _firstPlayersTurn = false;
+        } 
         for(int b = 0; b<_boardSize + 1; b++){
             for(int i = 0; i < _boardSize ; i++){
                 //create dictionary of ROW of buttons and set their placement, name, and other
                 Button rButton =  Instantiate(cornerButton, Vector3.zero, Quaternion.identity) as Button; //make new rButton from prefab
                 var rectTransformRow = rButton.GetComponent<RectTransform>(); //get reference of buttons rectTransformRow
-                rectTransformRow.SetParent(_backgroundPanel.transform); //make rButton child of background panel obj
+                rectTransformRow.SetParent(_backgroundObj.transform); //make rButton child of background panel obj
                 rectTransformRow.sizeDelta = new Vector2(82,20); //set buttons size
                 //set buttons position on background panel obj
-                rectTransformRow.position = new Vector2(_backgroundPanel.GetComponent<RectTransform>().rect.width/2 + (_boardSize/2*80) - i * 80,_backgroundPanel.GetComponent<RectTransform>().rect.height/2 + (_boardSize/2*80) + 35 - b * 80);
+                rectTransformRow.position = new Vector2(_backgroundObj.GetComponent<RectTransform>().rect.width/2 + (_boardSize/2*80) - i * 80,_backgroundObj.GetComponent<RectTransform>().rect.height/2 + (_boardSize/2*80) + 35 - b * 80);
                 rButton.name = (b.ToString() + i.ToString() + "r"); //set name of rButton
                 _gameBoard.rowButtons.Add(rButton.name, rButton); //add rButton to dictionary with rButton name
                 _gameBoard.rowButtons[rButton.name].onClick.AddListener (() => ButtonClicked(rButton, true)); //add listener to rButton so it knows when its clicked and which is clicked. ************ PASSES TRUE SO IT KNOWS ITS A ROW
@@ -86,10 +119,10 @@ public class GameScript : MonoBehaviour
                 //create dictionary of COLUMNS of buttons and set their placement, name, and other (reversed b & i)**********
                 Button cButton = Instantiate(cornerButton, Vector3.zero, Quaternion.identity) as Button; //make new cButton from prefab
                 var rectTransformCol = cButton.GetComponent<RectTransform>(); //get reference of buttons rectTransformCol
-                rectTransformCol.SetParent(_backgroundPanel.transform);//make cButton child of canvas
+                rectTransformCol.SetParent(_backgroundObj.transform);//make cButton child of canvas
                 rectTransformCol.sizeDelta = new Vector2(82,20); //set buttons size
                 //set buttons position on canvas
-                rectTransformCol.position = new Vector2(_backgroundPanel.GetComponent<RectTransform>().rect.width/2 + (_boardSize/2*80) + 35 - b * 80,_backgroundPanel.GetComponent<RectTransform>().rect.height/2 + (_boardSize/2*80) - i * 80);
+                rectTransformCol.position = new Vector2(_backgroundObj.GetComponent<RectTransform>().rect.width/2 + (_boardSize/2*80) + 35 - b * 80,_backgroundObj.GetComponent<RectTransform>().rect.height/2 + (_boardSize/2*80) - i * 80);
                 //set rotation of buttons.
                 rectTransformCol.eulerAngles = new Vector3(rectTransformCol.transform.eulerAngles.x, rectTransformCol.transform.eulerAngles.y, 90);
                 cButton.name = (i.ToString() + b.ToString()+ "c");//set name of cButton
@@ -104,11 +137,11 @@ public class GameScript : MonoBehaviour
                 if(_gameBoard.colButtons.ContainsKey(b.ToString() + (i + 1).ToString()+ "c") && _gameBoard.rowButtons.ContainsKey((b + 1).ToString() + i .ToString() + "r")){ //check that the boxes are within the correct buttons. (contains key searches dictionary for if that key exists)
                     GameObject _box = Instantiate(box, Vector3.zero, Quaternion.identity) as GameObject;//make box obj from prefab
                     var _rectTransform = _box.GetComponent<RectTransform>(); //get reference of buttons rectTransform
-                    _rectTransform.SetParent(_backgroundPanel.transform);//make button child of canvas
+                    _rectTransform.SetParent(_backgroundObj.transform);//make button child of canvas
                     _rectTransform.SetAsFirstSibling(); //make sure box is behind buttons
                     _rectTransform.sizeDelta = new Vector2(75,75);//set Boxes size
                     //set buttons position on canvas
-                    _rectTransform.position = new Vector2(_backgroundPanel.GetComponent<RectTransform>().rect.width/2 + (_boardSize/2*80) - i * 80,_backgroundPanel.GetComponent<RectTransform>().rect.height/2 + (_boardSize/2*80) - b * 80);;
+                    _rectTransform.position = new Vector2(_backgroundObj.GetComponent<RectTransform>().rect.width/2 + (_boardSize/2*80) - i * 80,_backgroundObj.GetComponent<RectTransform>().rect.height/2 + (_boardSize/2*80) - b * 80);;
                     //add buttons that are surrounding boxes to list within the box prefab.
                     _box.GetComponent<BoxScript>().boxLines(_gameBoard.rowButtons[b.ToString() + i.ToString() + "r"]); 
                     _box.GetComponent<BoxScript>().boxLines(_gameBoard.rowButtons[(b+1).ToString() + i.ToString()+ "r"]);
@@ -211,6 +244,21 @@ public class GameScript : MonoBehaviour
         }
         
     }
+    private void DisplayWinner(){
+        _winnerObj.SetActive(true); //show the player who won and the restart btn
+        if(_p1Score > _p2Score){ //player 1 won
+            if(_localGame){  
+                _winnterText.text = _localP1Name + " is the Winner!";
+            }
+        }else if(_p1Score < _p2Score){ //player 2 won
+            if(_localGame){  
+                _winnterText.text = _localP2Name + " is the Winner!";
+            }
+            
+        }else{//players had the same score and tied
+            _winnterText.text = "Tie Game!";
+        }
+    }
 
     // -------------------------CLASSES ---------------------------------------
     [System.Serializable] class GameBoard{
@@ -219,6 +267,8 @@ public class GameScript : MonoBehaviour
         public Dictionary<string, bool> rowClicked = new Dictionary<string, bool>();//dictionary of bools in row named by their position on a graph, tells whether buttons been pressed or not
         public Dictionary<string, bool> colClicked = new Dictionary<string, bool>();//dictionary of bools in column named by their position on a graph, tells whether buttons been pressed or not
         public List<GameObject> boxes = new List<GameObject>(); //list of boxed (the center of whats between 4 buttons and what changes colour)
+
+        
 
     }
 }

@@ -7,6 +7,7 @@ TagManager:
   - Canvas
   - unchecked
   - checked
+  - button
   layers:
   - Default
   - TransparentFX
