@@ -73,9 +73,9 @@ public class GameScript : MonoBehaviour
         _Player2ScoreText.text = _p2Score.ToString(); 
         _winnerObj.SetActive(false); //make gg text disappear.
         if(_localGame){
-            _currentGamestate = GAMESTATE.SETTINGS;
-            _boardSettingsObj.SetActive(true); 
-            _localPlayerNamesObj.SetActive(false);
+            _currentGamestate = GAMESTATE.SETTINGS; //change gamestate 
+            _boardSettingsObj.SetActive(true);  //make board setting visable
+            _localPlayerNamesObj.SetActive(false); //Make name input invisible.
         }
     }
     public void GameStartButton(){ //when you click the start button on board setting screen
