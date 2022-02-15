@@ -70,17 +70,19 @@ public class GameScript : MonoBehaviour
             Destroy(_box);
         }
         _gameBoard = new GameBoard();
-        for (int i = 0; i < 4; i++) //reset all scores and display on the text boxes
+        for (int i = 0; i < 4; i++) 
         {
-            _playerScores[i] = 0;
-            _playerScoreTextboxes[i].text = _playerScores[i].ToString();
+            _whosTurn[i] = 0; //reset turns so you can rerandomize them.
+            _playerScores[i] = 0; //set scores to 0
+            _playerScoreTextboxes[i].text = _playerScores[i].ToString(); //display scores in text box
         }
         _winnerObj.SetActive(false); //make gg text disappear.
         if(_localGame){
             _currentGamestate = GAMESTATE.SETTINGS; //change gamestate 
             _boardSettingsObj.SetActive(true);  //make board setting visable
-            _localPlayerNamesObj.SetActive(false); //Make name input invisible.
+            //_localPlayerNamesObj.SetActive(false); //Make name input invisible.
         }
+        _turnRotation = 0; // go back to the start of turn order
     }
     public void AddPlayerButton(){
         if(_numberOfPlayers < 4){
