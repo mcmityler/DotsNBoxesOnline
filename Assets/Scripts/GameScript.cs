@@ -29,6 +29,10 @@ public class GameScript : MonoBehaviour
     private int _turnRotation = 0; //what turn are you on.
     private bool _localGame = true; //are you playing a local game 
     private int[] _playerScores = new int[] {0,0,0,0}; //player 1-4 scores 
+
+    private Color32[] _localPlayerColors = new Color32[] {new Color32(0,90,188,255),new Color32(137,0,0,255), new Color32(1,123,0,255), new Color32(209,197,0,255)}; //Local players colors on the board.
+
+    [SerializeField] private Text[] _playerTurnOrderText; //reference to the textboxes for players turn order.
     private GameBoard _gameBoard = new GameBoard(); // gameboard is every button, box and if the buttons have been clicked yet.
     private enum GAMESTATE { //Enum for game state / what point the game is currently at.
         SETTINGS, 
@@ -40,7 +44,7 @@ public class GameScript : MonoBehaviour
     private GAMESTATE _currentGamestate = GAMESTATE.SETTINGS; //Actual reference to current game state
 
 
-
+    [SerializeField] private Animator _turnOrderAnimator; //reference to what animates the turn order
 
     //----------------------------FUNCTIONS-------------------------------------
     void Awake(){ //when this gameobject is awoken do ...
@@ -55,6 +59,7 @@ public class GameScript : MonoBehaviour
             for(int i = 0; i < _numberOfPlayers; i++){
                 _playerScoreTextboxes[i].text = _playerScores[i].ToString();
             }
+            _turnOrderAnimator.SetInteger("PlayerTurn", _turnRotation); //Change turn animation depending on turn rotation
         }
         if (_currentGamestate == GAMESTATE.GAMEOVER){
             DisplayWinner();
@@ -100,17 +105,31 @@ public class GameScript : MonoBehaviour
         _boardSize = (int) _boardSizeSlider.value; //make board the size that the slider is at.
         CreateGame(); //create the game board with the size in slider
         _currentGamestate = GAMESTATE.PLAYING;//Change gamestate to playing game
+        RandomizeTurns();
         if(_localGame){//if you entered a name and its a local game make player name appear in text boxes
+            
             for (int i = 0; i < _numberOfPlayers; i++) //cycle all players in game
             {
+                
                  if(_localPlayerNameInput[i].text != ""){  //check names arent left blank
+                 
                     _localPlayerNames[i] = _localPlayerNameInput[i].text; //set local player names to what was inputed if anything.
+                    Debug.Log(_localPlayerNames[i]);
                     _playerNameTextboxes[i].text = _localPlayerNames[i] + ": "; //set the text boxes at the score to the names.
+                    
+                   // _playerTurnOrderText[i].text = _localPlayerNames[i]; // Set the text boxes in the turn order to the names.
                 
                 }
+                ArrangeTurnOrder(i); //Arrange text and color of text boxes in bottom left
             }
         }
-        RandomizeTurns();
+        
+    }
+    private void ArrangeTurnOrder(int m_turnOrder){
+        Debug.Log(_whosTurn[m_turnOrder]);
+        _playerTurnOrderText[m_turnOrder].text = _localPlayerNames[(_whosTurn[m_turnOrder])-1]; //Change text to correct name
+        _playerTurnOrderText[m_turnOrder].color = _localPlayerColors[(_whosTurn[m_turnOrder])-1]; //Change color of text box to players color
+
     }
     private void CreateGame(){
 
@@ -184,7 +203,7 @@ public class GameScript : MonoBehaviour
                         _whosTurn[i] = 0;
                     }
                 }
-             Debug.Log(_whosTurn[i]);
+            //Debug.Log(_whosTurn[i]);
         }
         for (int i = 0; i < _numberOfPlayers; i++)
         {
@@ -204,8 +223,8 @@ public class GameScript : MonoBehaviour
             m_alreadyClicked = true;
         }
         if(!m_alreadyClicked){ //if button hasnt been clicked then change the buttons colour and check if the box needs to be filled in.
-        
-             if(_whosTurn[_turnRotation] == 1){//FIRST PLAYER
+            
+            if(_whosTurn[_turnRotation] == 1){//FIRST PLAYER
                 m_b.GetComponent<Image>().color = Color.blue;
             }else if(_whosTurn[_turnRotation] == 2){//SECOND PLAYER
                 m_b.GetComponent<Image>().color = Color.red;
@@ -215,6 +234,7 @@ public class GameScript : MonoBehaviour
             else if(_whosTurn[_turnRotation] == 4){//FOURTH PLAYER
                 m_b.GetComponent<Image>().color = Color.yellow;
             }
+           // m_b.GetComponent<Image>().color = _localPlayerColors[_whosTurn[_turnRotation]-1];
             ColorBlock m_tempColor = m_b.GetComponent<Button>().colors; //make temporary color block to change alpha of button to 100%
             m_tempColor.normalColor = m_b.GetComponent<Image>().color; //set normal color to what color button should be.
             m_b.GetComponent<Button>().colors = m_tempColor; //set buttons color block to temp color block
@@ -255,7 +275,7 @@ public class GameScript : MonoBehaviour
                     
                 }
                 if(m_clicked[0] && m_clicked[1] && m_clicked[2] && m_clicked[3]){ // if all buttons in temp m_clicked array were pressed do this.
-                    box.GetComponent<BoxScript>().ButtonSurrounded(_whosTurn[_turnRotation]); //pass to box script to change its colour and depending on whos turn it is.
+                    box.GetComponent<BoxScript>().ButtonSurrounded(_whosTurn[_turnRotation], _localPlayerColors[_whosTurn[_turnRotation]-1]); //pass to box script to change its colour and depending on whos turn it is.
                     m_pointGained = true; //point is gained
                     _playerScores[_whosTurn[_turnRotation]-1]++;//add points to whoevers turns score.
                     
