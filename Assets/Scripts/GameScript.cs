@@ -33,6 +33,7 @@ public class GameScript : MonoBehaviour
     private Color32[] _localPlayerColors = new Color32[] {new Color32(0,90,188,255),new Color32(137,0,0,255), new Color32(1,123,0,255), new Color32(209,197,0,255)}; //Local players colors on the board.
 
     [SerializeField] private Text[] _playerTurnOrderText; //reference to the textboxes for players turn order.
+    [SerializeField] private GameObject[] _localPlayerInputObjs; //Reference to the local player name input text boxes to change position and visibility 
     private GameBoard _gameBoard = new GameBoard(); // gameboard is every button, box and if the buttons have been clicked yet.
     private enum GAMESTATE { //Enum for game state / what point the game is currently at.
         SETTINGS, 
@@ -45,6 +46,7 @@ public class GameScript : MonoBehaviour
 
 
     [SerializeField] private Animator _turnOrderAnimator; //reference to what animates the turn order
+    [SerializeField] private Animator _localNameInputAnimator; //reference to what animates the local name input when players are added/subtracted
 
     //----------------------------FUNCTIONS-------------------------------------
     void Awake(){ //when this gameobject is awoken do ...
@@ -94,12 +96,23 @@ public class GameScript : MonoBehaviour
             _numberOfPlayers ++;
             _numberOfPlayerText.text = _numberOfPlayers.ToString();
         }
+        if(_localGame){
+            ChangeLocalPlayerNameVisibility();
+        }
     }public void MinusPlayerButton(){
         if(_numberOfPlayers > 2){
             _numberOfPlayers --;
             _numberOfPlayerText.text = _numberOfPlayers.ToString();
         }
+        if(_localGame){
+            ChangeLocalPlayerNameVisibility();
+        }
     }
+    private void ChangeLocalPlayerNameVisibility(){
+        
+        _localNameInputAnimator.SetInteger("PlayerAmount", _numberOfPlayers); //Change turn animation depending on turn rotation
+    }
+
     public void GameStartButton(){ //when you click the start button on board setting screen
         _boardSettingsObj.SetActive(false); //make panel disappear.
         _boardSize = (int) _boardSizeSlider.value; //make board the size that the slider is at.
