@@ -63,8 +63,9 @@ public class GameScript : MonoBehaviour
                         _localPlayerNameInput[i].text = _localPlayerNameInput[i].text.Substring(0, _localPlayerNameInput[i].text.Length - 1); //remove last character entered if it is longer then desired length
                     }
                 }
+               
             }
-            
+           
         }
         if(_currentGamestate == GAMESTATE.PLAYING){ //if you are in the game play loop
             for(int i = 0; i < _numberOfPlayers; i++){
@@ -91,6 +92,10 @@ public class GameScript : MonoBehaviour
             _whosTurn[i] = 0; //reset turns so you can rerandomize them.
             _playerScores[i] = 0; //set scores to 0
             _playerScoreTextboxes[i].text = _playerScores[i].ToString(); //display scores in text box
+            if(_localGame){
+                _playerTurnOrderText[i].text = _localPlayerNames[i];
+                _playerTurnOrderText[i].color = _localPlayerColors[i];
+            }
         }
         _winnerObj.SetActive(false); //make gg text disappear.
         if(_localGame){
@@ -99,6 +104,19 @@ public class GameScript : MonoBehaviour
             //_localPlayerNamesObj.SetActive(false); //Make name input invisible.
         }
         _turnRotation = 0; // go back to the start of turn order
+        _localNameInputAnimator.SetInteger("PlayerAmount", _numberOfPlayers);
+        while( _turnOrderAnimator.GetInteger("PlayerTurn") != 0){
+            Debug.Log("hey");
+                    var m_i = _turnOrderAnimator.GetInteger("PlayerTurn");
+                    if(m_i > _numberOfPlayers){
+                        _turnOrderAnimator.SetInteger("PlayerTurn", 0);
+                    }
+                    else{
+                        _turnOrderAnimator.SetInteger("PlayerTurn", m_i+1);
+                    }
+                    
+        }
+        
     }
     public void AddPlayerButton(){
         if(_numberOfPlayers < 4){
@@ -106,7 +124,8 @@ public class GameScript : MonoBehaviour
             _numberOfPlayerText.text = _numberOfPlayers.ToString();
         }
         if(_localGame){
-            ChangeLocalPlayerNameVisibility();
+            _localNameInputAnimator.SetInteger("PlayerAmount", _numberOfPlayers); //Animate how many player name inputs are visable
+            _turnOrderAnimator.SetInteger("PlayerAmount", _numberOfPlayers);//Animate how many players are shown in turn order
         }
     }public void MinusPlayerButton(){
         if(_numberOfPlayers > 2){
@@ -114,12 +133,9 @@ public class GameScript : MonoBehaviour
             _numberOfPlayerText.text = _numberOfPlayers.ToString();
         }
         if(_localGame){
-            ChangeLocalPlayerNameVisibility();
+            _localNameInputAnimator.SetInteger("PlayerAmount", _numberOfPlayers); //Animate how many player name inputs are visable
+            _turnOrderAnimator.SetInteger("PlayerAmount", _numberOfPlayers);//Animate how many players are shown in turn order
         }
-    }
-    private void ChangeLocalPlayerNameVisibility(){
-        
-        _localNameInputAnimator.SetInteger("PlayerAmount", _numberOfPlayers); //Change turn animation depending on turn rotation
     }
 
     public void GameStartButton(){ //when you click the start button on board setting screen
