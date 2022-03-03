@@ -522,4 +522,11 @@ public class GameScript : MonoBehaviour
 
 
     }
+
+
+    [SerializeField] private GameObject _mainMenuObj;
+    public void LocalGameButton(){
+        _localGame = true;
+        _mainMenuObj.SetActive(false);
+    }
 }
