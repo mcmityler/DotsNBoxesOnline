@@ -90,6 +90,10 @@ public class GameScript : MonoBehaviour
 
         }
     }
+    
+    public void SetLocalGame(bool m_local){
+        _localGame = m_local;
+    }
     public void RestartButton()
     {
 
@@ -523,10 +527,4 @@ public class GameScript : MonoBehaviour
 
     }
 
-
-    [SerializeField] private GameObject _mainMenuObj;
-    public void LocalGameButton(){
-        _localGame = true;
-        _mainMenuObj.SetActive(false);
-    }
 }
