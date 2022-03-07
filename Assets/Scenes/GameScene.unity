@@ -2389,8 +2389,8 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 871195792}
-        m_TargetAssemblyTypeName: MenuScript, Assembly-CSharp
+      - m_Target: {fileID: 871195793}
+        m_TargetAssemblyTypeName: SocketManager, Assembly-CSharp
         m_MethodName: LoginButton
         m_Mode: 1
         m_Arguments:
@@ -3597,7 +3597,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 871195792}
         m_TargetAssemblyTypeName: MenuScript, Assembly-CSharp
-        m_MethodName: BackButton
+        m_MethodName: BacktoMainButton
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -4797,6 +4797,7 @@ GameObject:
   - component: {fileID: 871195791}
   - component: {fileID: 871195790}
   - component: {fileID: 871195792}
+  - component: {fileID: 871195793}
   m_Layer: 0
   m_Name: GameplayManager
   m_TagString: Untagged
@@ -4859,6 +4860,7 @@ MonoBehaviour:
   - {fileID: 1619679476}
   - {fileID: 902087192}
   - {fileID: 1383941675}
+  socketManager: {fileID: 871195793}
   _turnOrderAnimator: {fileID: 1911056254}
   _localNameInputAnimator: {fileID: 123649195}
 --- !u!4 &871195791
@@ -4892,7 +4894,25 @@ MonoBehaviour:
   _helpScreenObj: {fileID: 1668421016}
   _creditScreenObj: {fileID: 1752463272}
   _loginScreenObj: {fileID: 1559081096}
+--- !u!114 &871195793
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 871195789}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 859d326edd9217742b3cf278df92a4be, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  latestServerMessage:
+    header: 0
+    players: []
+  _usernameInputText: {fileID: 1365425420}
+  _passwordInputText: {fileID: 559523311}
   _incorrectText: {fileID: 263607939}
+  gameScript: {fileID: 871195790}
 --- !u!1 &878365071
 GameObject:
   m_ObjectHideFlags: 0
@@ -6318,6 +6338,18 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
+      - m_Target: {fileID: 871195793}
+        m_TargetAssemblyTypeName: SocketManager, Assembly-CSharp
+        m_MethodName: startUDP
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &1339287615
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6939,7 +6971,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 871195792}
         m_TargetAssemblyTypeName: MenuScript, Assembly-CSharp
-        m_MethodName: BackButton
+        m_MethodName: BacktoMainButton
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -7147,7 +7179,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 871195792}
         m_TargetAssemblyTypeName: MenuScript, Assembly-CSharp
-        m_MethodName: BackButton
+        m_MethodName: BacktoMainButton
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -8098,7 +8130,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 871195792}
         m_TargetAssemblyTypeName: MenuScript, Assembly-CSharp
-        m_MethodName: BackButton
+        m_MethodName: BacktoMainButton
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
