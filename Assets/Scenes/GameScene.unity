@@ -2321,7 +2321,7 @@ MonoBehaviour:
   m_LineType: 0
   m_HideMobileInput: 0
   m_CharacterValidation: 0
-  m_CharacterLimit: 0
+  m_CharacterLimit: 7
   m_OnEndEdit:
     m_PersistentCalls:
       m_Calls: []
@@ -3574,7 +3574,7 @@ MonoBehaviour:
   m_LineType: 0
   m_HideMobileInput: 0
   m_CharacterValidation: 0
-  m_CharacterLimit: 0
+  m_CharacterLimit: 7
   m_OnEndEdit:
     m_PersistentCalls:
       m_Calls: []
@@ -4456,7 +4456,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 641933936}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 871195793}
+        m_TargetAssemblyTypeName: SocketManager, Assembly-CSharp
+        m_MethodName: HostGameButton
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &641933936
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5204,7 +5216,7 @@ MonoBehaviour:
   m_LineType: 0
   m_HideMobileInput: 0
   m_CharacterValidation: 0
-  m_CharacterLimit: 0
+  m_CharacterLimit: 7
   m_OnEndEdit:
     m_PersistentCalls:
       m_Calls: []
@@ -5831,7 +5843,6 @@ MonoBehaviour:
   - {fileID: 524959737}
   - {fileID: 358140889}
   - {fileID: 732331949}
-  _maxNameLength: 7
   _numberOfPlayerText: {fileID: 311823249}
   _playerTurnOrderText:
   - {fileID: 1946915683}
@@ -5843,7 +5854,6 @@ MonoBehaviour:
   - {fileID: 1619679476}
   - {fileID: 902087192}
   - {fileID: 1383941675}
-  socketManager: {fileID: 871195793}
   _turnOrderAnimator: {fileID: 1911056254}
   _localNameInputAnimator: {fileID: 123649195}
 --- !u!4 &871195791
@@ -5872,13 +5882,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 69846e3cfa289c145bad9f5c4c09137f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gameScript: {fileID: 871195790}
   _mainMenuObj: {fileID: 1764487016}
   _helpScreenObj: {fileID: 1668421016}
   _creditScreenObj: {fileID: 1752463272}
   _loginScreenObj: {fileID: 1559081096}
   _lobbyMenuSceenScreenObj: {fileID: 1885759475}
-  _myAccountScreenObj: {fileID: 0}
+  _myAccountScreenObj: {fileID: 2001229822}
 --- !u!114 &871195793
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5897,8 +5906,6 @@ MonoBehaviour:
   _usernameInputText: {fileID: 1365425420}
   _passwordInputText: {fileID: 559523311}
   _incorrectText: {fileID: 263607939}
-  gameScript: {fileID: 871195790}
-  _menuScript: {fileID: 871195792}
 --- !u!1 &878365071
 GameObject:
   m_ObjectHideFlags: 0
@@ -11227,7 +11234,7 @@ MonoBehaviour:
   m_LineType: 0
   m_HideMobileInput: 0
   m_CharacterValidation: 0
-  m_CharacterLimit: 0
+  m_CharacterLimit: 7
   m_OnEndEdit:
     m_PersistentCalls:
       m_Calls: []

@@ -16,6 +16,7 @@ class SocketMessageType(IntEnum):
     CONNECTDNB = 121
     UPDATEDNB = 122
     NEWDNBCLIENT = 123
+    HOSTDNBGAME = 124
 
 
 #listen for messages from server..
@@ -34,8 +35,11 @@ def handle_messages(sock: socket.socket):
         clients_lock.acquire()
         if(addr in clients): #check if address is already in client list, if so then do something with that client
                 if(data['header'] == SocketMessageType.CONNECTDNB):
-                    print(clients[addr]['lobbyID'])
                     clients[addr]['lobbyID'] = data['lobbyID']
+                    print(clients[addr]['lobbyID'])
+                if(data['header'] == SocketMessageType.HOSTDNBGAME):
+                    clients[addr]['lobbyID'] = data['lobbyID']
+                    print(clients[addr]['lobbyID'])
         else: # if you arent part of the contact list then do the connection 
             if(data['header'] == SocketMessageType.CONNECTDNB): # if they are connecting..
                 clients[addr] = {} #create new obj

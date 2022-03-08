@@ -32,6 +32,7 @@ public class SocketManager : MonoBehaviour
     };
     private GAMESTATE _currentGamestate = GAMESTATE.STARTMENU; //what is the current gamestate
     private string _lobbyString = "null"; //current lobby string
+    const string characters= "abcdefghijkmnpqrstuvwxyz23456789"; //chars for random lobby id
     void Awake(){
         _gameScript = this.GetComponent<GameScript>();///set reference to gamescript
         _menuScript = this.GetComponent<MenuScript>();///set reference to MenuScript
@@ -160,12 +161,38 @@ public class SocketManager : MonoBehaviour
         }
 
     }
+
+    public void HostGameButton(){
+        CreateLobbyKey(); //make new random lobby ID for hosted game.
+        SendHostMessage(); //send message to server telling it your lobby ID / you are hosting a game
+    }
+    void SendHostMessage(){
+        var payload = new ConnectClientMessage{ //payload is what you are sending to server.
+            header = socketMessagetype.HOSTDNBGAME, //header tells server what type of message it is.
+            lobbyID = _lobbyString
+        };
+        var data = Encoding.ASCII.GetBytes(JsonUtility.ToJson(payload)); //convert payload to transmittable data.(json file)
+        udp.Send(data, data.Length); //send data to server you connected to in start func. 
+    }
+    void CreateLobbyKey(){ //Create a random string
+        _lobbyString = "";
+        for(int i=0; i<5; i++)
+        {        
+             _lobbyString += characters[UnityEngine.Random.Range(0, characters.Length)];
+        }
+        Debug.Log(_lobbyString);
+    }
+
+
+
+
 }
 public enum socketMessagetype{
     NOTHING = 120, //nothing
     CONNECTDNB = 121, //SENT FROM CLIENT TO SERVER
     UPDATEDNB = 122, //SENT FROM SERVER TO CLIENT
-    NEWDNBCLIENT = 123 //SENT FROM SERVER TO CLIENT
+    NEWDNBCLIENT = 123, //SENT FROM SERVER TO CLIENT
+    HOSTDNBGAME = 124 //SENT FROM CLIENT TO SERVER tells server you are hosting a game + sends it your lobbyID
 
 }
 
@@ -177,9 +204,9 @@ public enum socketMessagetype{
    public string lobbyID; 
 }
 
-[System.Serializable] class RestartServerMessage: BaseSocketMessage
+[System.Serializable] class HostServerMessage: BaseSocketMessage
 {
-   
+    public string lobbyID; 
 }
 [System.Serializable] class DisconnectPayload: BaseSocketMessage
 {

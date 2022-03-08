@@ -26,7 +26,6 @@ public class GameScript : MonoBehaviour
     [SerializeField] private Text[] _playerNameTextboxes; //reference to  player 1 & 2 score text boxes and Player 1 and 2 Name textboxes
     [SerializeField] private InputField[] _localPlayerNameInput; //reference to player 1, 2, 3, and 4 input boxes
     private string[] _localPlayerNames = new string[] { "Player 1", "Player 2", "Player 3", "Player 4" }; //what are the local entered names saved
-    [SerializeField] private int _maxNameLength = 7; //how long can the players name be in the input
     private int _numberOfPlayers = 2; //how many players are playing
     [SerializeField] private Text _numberOfPlayerText; //reference to display how many players you want playing
     private int _turnRotation = 0; //what turn are you on.
@@ -67,18 +66,6 @@ public class GameScript : MonoBehaviour
         { //if you are on the board settings menu
             _boardSize = (int)_boardSizeSlider.value; //make board the size that the slider is at.
             _boardSizeText.text = (_boardSizeSlider.value).ToString(); //make board size text on board settings panel update
-            if (_localGame)
-            { //if you are playing a local game
-                for (int i = 0; i < _numberOfPlayers; i++)
-                { //Cycle how many players are in the game
-                    if (_localPlayerNameInput[i].text.Length > _maxNameLength)
-                    { //Check to see if text box is less then desired length
-                        _localPlayerNameInput[i].text = _localPlayerNameInput[i].text.Substring(0, _localPlayerNameInput[i].text.Length - 1); //remove last character entered if it is longer then desired length
-                    }
-                }
-
-            }
-
         }
         if (_currentGamestate == GAMESTATE.PLAYING)
         { //if you are in the game play loop
