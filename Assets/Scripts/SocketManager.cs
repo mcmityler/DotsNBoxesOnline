@@ -19,7 +19,8 @@ public class SocketManager : MonoBehaviour
     [SerializeField] private InputField _usernameInputText, _passwordInputText; //reference to user and pass input
     [SerializeField] private Text _incorrectText; //reference to incorrect text output to show when u&p are wrong or taken
     bool _correctUandP = false; //was the password and username correct/taken/wrong?
-    public GameScript gameScript; //reference to gamescript code.
+    private GameScript _gameScript; //reference to gamescript code.
+    private MenuScript _menuScript;
     private enum GAMESTATE //Enum for game state / what point the game is currently at.
     { 
         STARTMENU,
@@ -31,6 +32,10 @@ public class SocketManager : MonoBehaviour
     };
     private GAMESTATE _currentGamestate = GAMESTATE.STARTMENU; //what is the current gamestate
     private string _lobbyString = "null"; //current lobby string
+    void Awake(){
+        _gameScript = this.GetComponent<GameScript>();///set reference to gamescript
+        _menuScript = this.GetComponent<MenuScript>();///set reference to MenuScript
+    }
     public void SetGameState(string m_gamestate) //get gamestate and update socket managers gamestate from Gamescript.
     {
         switch (m_gamestate)
@@ -84,7 +89,7 @@ public class SocketManager : MonoBehaviour
         //if the user and password are correct login...
         if (_correctUandP)
         {
-            
+            _menuScript.LobbyMenuSceenButton();
         }
 
 
