@@ -45,7 +45,8 @@ public class GameScript : MonoBehaviour
         GAMEOVER,
         RESTART,
         LOGINREGISTER,
-        HOSTING
+        LOBBYMENU,
+        HOSTSCREEN
     };
 
     private GAMESTATE _currentGamestate = GAMESTATE.STARTMENU; //Actual reference to current game state
@@ -174,7 +175,9 @@ public class GameScript : MonoBehaviour
             _turnOrderAnimator.SetInteger("PlayerAmount", _numberOfPlayers);//Animate how many players are shown in turn order
         }
     }
-
+    public void StartMultiplayerGame(){
+        
+    }
     public void GameStartButton()
     { //when you click the start button on board setting screen
         _boardSettingsObj.SetActive(false); //make panel disappear.
