@@ -44,7 +44,8 @@ public class GameScript : MonoBehaviour
         PLAYING,
         GAMEOVER,
         RESTART,
-        LOGINREGISTER
+        LOGINREGISTER,
+        HOSTING
     };
 
     private GAMESTATE _currentGamestate = GAMESTATE.STARTMENU; //Actual reference to current game state
@@ -58,7 +59,7 @@ public class GameScript : MonoBehaviour
     { //when this gameobject is awoken do ...
         _canvas = GameObject.FindGameObjectWithTag("Canvas"); //give canvas reference to the canvas obj
         _socketManager = this.GetComponent<SocketManager>();//set reference to socket script
-        _socketManager.SetGameState(_currentGamestate.ToString());
+        _socketManager.SetSOCKETGameState(_currentGamestate.ToString());
     }
     void Update()
     {
@@ -86,12 +87,14 @@ public class GameScript : MonoBehaviour
         _localGame = m_local;
         if(_localGame){ //are you playing a local game
             _currentGamestate = GAMESTATE.SETTINGS;
-            _socketManager.SetGameState(_currentGamestate.ToString()); //Change gamestate in socketmanager
+            _socketManager.SetSOCKETGameState(_currentGamestate.ToString()); //Change gamestate in socketmanager
         }else{
             _currentGamestate = GAMESTATE.LOGINREGISTER;
-            _socketManager.SetGameState(_currentGamestate.ToString()); //Change gamestate in socketmanager
+            _socketManager.SetSOCKETGameState(_currentGamestate.ToString()); //Change gamestate in socketmanager
         }
-        
+    }
+    public void SetGSGameState(string m_state){
+        _currentGamestate = (GAMESTATE)System.Enum.Parse( typeof(GAMESTATE), m_state, true);
     }
     public void RestartButton()
     {
@@ -123,7 +126,7 @@ public class GameScript : MonoBehaviour
         if (_localGame)
         {
             _currentGamestate = GAMESTATE.SETTINGS; //change gamestate 
-            _socketManager.SetGameState(_currentGamestate.ToString()); //Change gamestate in socketmanager
+            _socketManager.SetSOCKETGameState(_currentGamestate.ToString()); //Change gamestate in socketmanager
             _boardSettingsObj.SetActive(true);  //make board setting visable
             //_localPlayerNamesObj.SetActive(false); //Make name input invisible.
         }
@@ -178,7 +181,7 @@ public class GameScript : MonoBehaviour
         _boardSize = (int)_boardSizeSlider.value; //make board the size that the slider is at.
         CreateGame(); //create the game board with the size in slider
         _currentGamestate = GAMESTATE.PLAYING;//Change gamestate to playing game
-        _socketManager.SetGameState(_currentGamestate.ToString()); //Change gamestate in socketmanager
+        _socketManager.SetSOCKETGameState(_currentGamestate.ToString()); //Change gamestate in socketmanager
         RandomizeTurns();
         if (_localGame)
         {//if you entered a name and its a local game make player name appear in text boxes
@@ -421,7 +424,7 @@ public class GameScript : MonoBehaviour
         if (!m_didCheck && _currentGamestate != GAMESTATE.GAMEOVER)
         {
             _currentGamestate = GAMESTATE.GAMEOVER;
-            _socketManager.SetGameState(_currentGamestate.ToString()); //Change gamestate in socketmanager
+            _socketManager.SetSOCKETGameState(_currentGamestate.ToString()); //Change gamestate in socketmanager
             for (int i = 0; i < _numberOfPlayers; i++)
             { //Update score one last time!!
                 _playerScoreTextboxes[i].text = _playerScores[i].ToString();

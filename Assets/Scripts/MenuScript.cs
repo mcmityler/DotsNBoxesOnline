@@ -5,8 +5,8 @@ using UnityEngine;
 public class MenuScript : MonoBehaviour
 {
     private GameScript _gameScript; //reference to gamescript
-    [SerializeField] private GameObject _mainMenuObj, _helpScreenObj, _creditScreenObj, _loginScreenObj, _lobbyMenuSceenScreenObj, _myAccountScreenObj; //reference to screen objects to in/visable
-    private bool _myAccountScreenVisable = false; //bool to control screen visability toggle (so i can use the same func for back button and my account button)
+    [SerializeField] private GameObject _mainMenuObj, _helpScreenObj, _creditScreenObj, _loginScreenObj, _lobbyMenuSceenScreenObj, _myAccountScreenObj, _keyLobbyObj; //reference to screen objects to in/visable
+    private bool _myAccountScreenVisable,_keyLobbyVisable = false; //bool to control screen visability toggle (so i can use the same func for back button and my account button)
 
     void Awake(){
         _gameScript = this.GetComponent<GameScript>();///set reference to gamescript
@@ -48,6 +48,10 @@ public class MenuScript : MonoBehaviour
     public void MyAccountScreenToggle(){
         _myAccountScreenVisable = !_myAccountScreenVisable;
         _myAccountScreenObj.SetActive(_myAccountScreenVisable);
+    }
+    public void LobbyKeyScreenToggle(){
+        _keyLobbyVisable = !_keyLobbyVisable;
+        _keyLobbyObj.SetActive(_keyLobbyVisable);
     }
 
 }

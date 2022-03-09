@@ -21,6 +21,7 @@ public class SocketManager : MonoBehaviour
     bool _correctUandP = false; //was the password and username correct/taken/wrong?
     private GameScript _gameScript; //reference to gamescript code.
     private MenuScript _menuScript;
+    [SerializeField] private Text _keyHostText; //reference
     private enum GAMESTATE //Enum for game state / what point the game is currently at.
     { 
         STARTMENU,
@@ -28,7 +29,8 @@ public class SocketManager : MonoBehaviour
         PLAYING,
         GAMEOVER,
         RESTART,
-        LOGINREGISTER
+        LOGINREGISTER,
+        HOSTING
     };
     private GAMESTATE _currentGamestate = GAMESTATE.STARTMENU; //what is the current gamestate
     private string _lobbyString = "null"; //current lobby string
@@ -37,35 +39,15 @@ public class SocketManager : MonoBehaviour
         _gameScript = this.GetComponent<GameScript>();///set reference to gamescript
         _menuScript = this.GetComponent<MenuScript>();///set reference to MenuScript
     }
-    public void SetGameState(string m_gamestate) //get gamestate and update socket managers gamestate from Gamescript.
+    public void SetSOCKETGameState(string m_gamestate) //get gamestate and update socket managers gamestate from Gamescript.
     {
-        switch (m_gamestate)
-        {
-            case "STARTMENU":
-                _currentGamestate = GAMESTATE.STARTMENU;
-                break;
-            case "SETTINGS":
-                _currentGamestate = GAMESTATE.SETTINGS;
-                break;
-            case "PLAYING":
-                _currentGamestate = GAMESTATE.PLAYING;
-                break;
-            case "GAMEOVER":
-                _currentGamestate = GAMESTATE.GAMEOVER;
-                break;
-            case "RESTART":
-                _currentGamestate = GAMESTATE.RESTART;
-                break;
-            case "LOGINREGISTER":
-                _currentGamestate = GAMESTATE.LOGINREGISTER;
-                break;
-        }
+        _currentGamestate = (GAMESTATE)System.Enum.Parse( typeof(GAMESTATE), m_gamestate, true);
     }
 
     public void Update()
     {
-        if(_currentGamestate == GAMESTATE.LOGINREGISTER){ //if you are in the login / register screen 
-            
+        if(_currentGamestate == GAMESTATE.HOSTING){ //if you are in host/keylobby screen
+            _keyHostText.text = "Lobby Key: " + _lobbyString;
         }
     }
     public void LoginButton()
@@ -165,6 +147,9 @@ public class SocketManager : MonoBehaviour
     public void HostGameButton(){
         CreateLobbyKey(); //make new random lobby ID for hosted game.
         SendHostMessage(); //send message to server telling it your lobby ID / you are hosting a game
+        _menuScript.LobbyKeyScreenToggle();
+        _currentGamestate = GAMESTATE.HOSTING;
+        _gameScript.SetGSGameState(_currentGamestate.ToString());
     }
     void SendHostMessage(){
         var payload = new ConnectClientMessage{ //payload is what you are sending to server.
