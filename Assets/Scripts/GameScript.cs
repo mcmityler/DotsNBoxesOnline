@@ -46,7 +46,8 @@ public class GameScript : MonoBehaviour
         RESTART,
         LOGINREGISTER,
         LOBBYMENU,
-        HOSTSCREEN
+        HOSTSCREEN,
+        STARTMULTIPLAYER
     };
 
     private GAMESTATE _currentGamestate = GAMESTATE.STARTMENU; //Actual reference to current game state
@@ -96,6 +97,7 @@ public class GameScript : MonoBehaviour
     }
     public void SetGSGameState(string m_state){
         _currentGamestate = (GAMESTATE)System.Enum.Parse( typeof(GAMESTATE), m_state, true);
+        Debug.Log(_currentGamestate);
     }
     public void RestartButton()
     {

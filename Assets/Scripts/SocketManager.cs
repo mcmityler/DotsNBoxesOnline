@@ -17,7 +17,9 @@ public class SocketManager : MonoBehaviour
     string _tempPassword = "";//what was inputed in password textbox
 
     [SerializeField] private InputField _usernameInputText, _passwordInputText, _lobbyIDInput; //reference to user and pass input // and lobbyID input
-    [SerializeField] private Text _incorrectText; //reference to incorrect text output to show when u&p are wrong or taken
+    [SerializeField] private Text _errorUserPassText; //reference to incorrect text output to show when u&p are wrong or taken
+    [SerializeField] private Text _errorLobbyKeyText; //reference to incorrect text output when you enter the wrong lobby key
+    private string _errorKeyMessage = "";
     bool _correctUandP = false; //was the password and username correct/taken/wrong?
     private GameScript _gameScript; //reference to gamescript code.
     private MenuScript _menuScript;
@@ -33,7 +35,8 @@ public class SocketManager : MonoBehaviour
         RESTART,
         LOGINREGISTER,
         LOBBYMENU,
-        HOSTSCREEN
+        HOSTSCREEN,
+        STARTMULTIPLAYER
     };
     private GAMESTATE _currentGamestate = GAMESTATE.STARTMENU; //what is the current gamestate
     private string _lobbyString = "null"; //current lobby string
@@ -46,15 +49,32 @@ public class SocketManager : MonoBehaviour
     {
         _currentGamestate = (GAMESTATE)System.Enum.Parse( typeof(GAMESTATE), m_gamestate, true);
     }
+    void OnDestroy(){
+        //When you close the client destroy UDP that if running
+        if(udp != null){
+            udp.Dispose();
+        }
+    }
+    public void DestroyUDP() // call this function if you ever want to destroy UDP for client
+    {
+        if(udp != null){
+            udp.Dispose();
+        }
+        
+    }
 
     public void Update()
     {
         if(_currentGamestate == GAMESTATE.HOSTSCREEN){ //if you are in host/keylobby screen
             _keyHostText.text = "Lobby Key: " + _lobbyString;
         }
-        if(_multiplayerGameStarted){
+        if(_currentGamestate == GAMESTATE.LOBBYMENU){
+            _errorLobbyKeyText.text = _errorKeyMessage;
+        }
+        if(_multiplayerGameStarted){ //temporary to show that game started on EXE
             _keyHostText.text = "Gamestarted!";
         }
+        
     }
     public void LoginButton()
     {
@@ -63,7 +83,7 @@ public class SocketManager : MonoBehaviour
         if (_tempPassword == "" || _tempUser == "")
         { //if username or password is left blank display error message
             Debug.Log("must enter a username and password");
-            _incorrectText.text = "Incorrect User/Password";
+            _errorUserPassText.text = "Incorrect User/Password";
         }
         else
         {
@@ -72,7 +92,7 @@ public class SocketManager : MonoBehaviour
 
             //Check if password matches username in system
             _correctUandP = true;
-            _incorrectText.text = ""; //Reset back to nothing once you enter a correct U & P
+            _errorUserPassText.text = ""; //Reset back to nothing once you enter a correct U & P
         }
 
         //if the user and password are correct login...
@@ -80,6 +100,8 @@ public class SocketManager : MonoBehaviour
         {
             _menuScript.LobbyMenuSceenButton();
         }
+        
+        
 
 
     }
@@ -143,9 +165,13 @@ public class SocketManager : MonoBehaviour
                 break;
             case socketMessagetype.CHECKLOBBY:
                 LobbyCheckClientMessage checkLobbyPayload = JsonUtility.FromJson<LobbyCheckClientMessage>(data); //convert data from base class to result class
-                Debug.Log("does lobby exist: " + checkLobbyPayload.lobbyExists);
+               
                 if(checkLobbyPayload.lobbyExists == 0){
+                     Debug.Log("does lobby exist (n): " + checkLobbyPayload.lobbyExists);
+
+                     _errorKeyMessage = "LobbyID " + _lobbyString + " Non-Existent";
                     _lobbyString = "null";
+                    
                 }
                 //gmScript.FillClientDetails(newClientPayload.players[0].id, newClientPayload.players[0].lobbyID);//tell client what its own ID is and what lobby it is in
                 break;
@@ -154,6 +180,10 @@ public class SocketManager : MonoBehaviour
                 if(startGamePayload.startGame == 1){ //start game
                     Debug.Log("StartGame!");
                     _multiplayerGameStarted = true;
+                    _currentGamestate = GAMESTATE.STARTMULTIPLAYER;
+                    _gameScript.SetGSGameState(_currentGamestate.ToString());
+                    Debug.Log(_currentGamestate);
+                    _errorKeyMessage = "";
                 }
                 //gmScript.FillClientDetails(newClientPayload.players[0].id, newClientPayload.players[0].lobbyID);//tell client what its own ID is and what lobby it is in
                 break;
