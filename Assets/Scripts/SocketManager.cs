@@ -11,21 +11,19 @@ public class SocketManager : MonoBehaviour
     public UdpClient udp; //new udp (send/recieve messages from aws) 
     public const string IP_ADRESS = "54.205.115.9"; //the ip the server is connected to..
     public const int PORT = 12345; //port we are using
-    public ServerMessage latestServerMessage; //last message recieved from the server
-
-    string _tempUser = ""; //what was inputed in username textbox
-    string _tempPassword = "";//what was inputed in password textbox
-
-    [SerializeField] private InputField _usernameInputText, _passwordInputText, _lobbyIDInput; //reference to user and pass input // and lobbyID input
-    [SerializeField] private Text _errorUserPassText; //reference to incorrect text output to show when u&p are wrong or taken
-    [SerializeField] private Text _errorLobbyKeyText; //reference to incorrect text output when you enter the wrong lobby key
-    private string _errorKeyMessage = "";
+    public ServerMessage latestServerMessage; //last message recieved from the server (Update Function)
+    string _tempUserInput = ""; //what was inputed in username textbox
+    string _tempPasswordInput = "";//what was inputed in password textbox
+    [SerializeField] private InputField _usernameInputText, _passwordInputText, _lobbyKeyInput; //user and pass input // lobbyKey input
+    [SerializeField] private Text _errorUserPassText; //incorrect text output to show when u&p are wrong or taken
+    [SerializeField] private Text _errorLobbyKeyText; //incorrect text output when you enter the wrong lobby key
+    private string _errorKeyMessage = ""; //lobby key text
     bool _correctUandP = false; //was the password and username correct/taken/wrong?
-    private GameScript _gameScript; //reference to gamescript code.
-    private MenuScript _menuScript;
-    [SerializeField] private Text _keyHostText; //reference
-
-    bool _multiplayerGameStarted = false;
+    private GameScript _gameScript; //game script reference
+    private MenuScript _menuScript; //menu script reference
+    [SerializeField] private Text _keyHostText; //Text that displays lobby key when hosting
+    bool _multiplayerLobbyReady = false; //bool to start multiplayer game when lobby is ready
+    bool _multiplayerGameStarted = false; //has the multiplayer game been started.
     private enum GAMESTATE //Enum for game state / what point the game is currently at.
     { 
         STARTMENU,
@@ -40,14 +38,14 @@ public class SocketManager : MonoBehaviour
     };
     private GAMESTATE _currentGamestate = GAMESTATE.STARTMENU; //what is the current gamestate
     private string _lobbyString = "null"; //current lobby string
-    const string characters= "abcdefghijkmnpqrstuvwxyz23456789"; //chars for random lobby id
+    const string characters= "abcdefghijkmnpqrstuvwxyz23456789"; //chars for random lobby key
     void Awake(){
         _gameScript = this.GetComponent<GameScript>();///set reference to gamescript
         _menuScript = this.GetComponent<MenuScript>();///set reference to MenuScript
     }
     public void SetSOCKETGameState(string m_gamestate) //get gamestate and update socket managers gamestate from Gamescript.
     {
-        _currentGamestate = (GAMESTATE)System.Enum.Parse( typeof(GAMESTATE), m_gamestate, true);
+        _currentGamestate = (GAMESTATE)System.Enum.Parse( typeof(GAMESTATE), m_gamestate, true); //convert string to enum (true means ignore case)
     }
     void OnDestroy(){
         //When you close the client destroy UDP that if running
@@ -68,22 +66,24 @@ public class SocketManager : MonoBehaviour
         if(_currentGamestate == GAMESTATE.HOSTSCREEN){ //if you are in host/keylobby screen
             _keyHostText.text = "Lobby Key: " + _lobbyString;
         }
-        if(_currentGamestate == GAMESTATE.LOBBYMENU){
+        if(_currentGamestate == GAMESTATE.LOBBYMENU){ //if you are in the lobby menu
             _errorLobbyKeyText.text = _errorKeyMessage;
         }
-        if(_multiplayerGameStarted){ //temporary to show that game started on EXE
-            _keyHostText.text = "Gamestarted!";
+        if(_multiplayerLobbyReady){ //Enough players in lobby, get it ready to play.
+            _multiplayerLobbyReady = false;
+            _menuScript.StartMPGame(); //hide menus so you can see game board
+            _gameScript.StartMultiplayerGameBoard(); //display game board and hide board settings
+            _multiplayerGameStarted = true; //game has started
         }
-        
     }
-    public void LoginButton()
+    public void LoginButton() //login button on Lobby menu screen
     {
-        _tempPassword = _passwordInputText.text;
-        _tempUser = _usernameInputText.text;
-        if (_tempPassword == "" || _tempUser == "")
-        { //if username or password is left blank display error message
+        _tempPasswordInput = _passwordInputText.text; //get password from password input
+        _tempUserInput = _usernameInputText.text; //get username from username input
+        if (_tempPasswordInput == "" || _tempUserInput == "")//if username or password is left blank display error message
+        { 
             Debug.Log("must enter a username and password");
-            _errorUserPassText.text = "Incorrect User/Password";
+            _errorUserPassText.text = "Cannot leave empty";
         }
         else
         {
@@ -106,7 +106,7 @@ public class SocketManager : MonoBehaviour
 
     }
 
-    public void startUDP()
+    public void startUDP() //start UDP and connect to server.
     {
         udp = new UdpClient(); //create new udp client
         try{
@@ -115,7 +115,7 @@ public class SocketManager : MonoBehaviour
             Debug.LogError("Didnt find IP address");
         }
         SendConnectMessage(); //send a connect message to server (also add player to a connect list).
-        udp.BeginReceive(new AsyncCallback(OnRecieved), udp);        //wait for server messages...
+        udp.BeginReceive(new AsyncCallback(OnRecieved), udp);    //wait for server messages...
 
     }
     void OnRecieved(IAsyncResult result){ //Waiting for a message from the server..
@@ -136,16 +136,7 @@ public class SocketManager : MonoBehaviour
         //handle message you recieved.
         HandleMessagePayload(returnData);
     } 
-    void SendConnectMessage(){ //tell server you have connected.. send connect message
-        //Debug.Log ("sending connect message");
-        var payload = new LobbyIDClientMessage{ //payload is what you are sending to server.
-            header = socketMessagetype.CONNECTDNB, //header tells server what type of message it is.
-            lobbyID = _lobbyString
-        };
-        var data = Encoding.ASCII.GetBytes(JsonUtility.ToJson(payload)); //convert payload to transmittable data.(json file)
-        udp.Send(data, data.Length); //send data to server you connected to in start func. 
-    }
-
+    
     void HandleMessagePayload(string data){ //recieved message from server now process it.
         Debug.Log("Got Message: " + data);
 
@@ -163,13 +154,17 @@ public class SocketManager : MonoBehaviour
                 Debug.Log("Connected!");
                 //gmScript.FillClientDetails(newClientPayload.players[0].id, newClientPayload.players[0].lobbyID);//tell client what its own ID is and what lobby it is in
                 break;
+            case socketMessagetype.SENDLOBBYKEY:
+                LobbyKeyClientMessage newLobbyKeyPayload = JsonUtility.FromJson<LobbyKeyClientMessage>(data);
+                _lobbyString = newLobbyKeyPayload.lobbyKey;
+                break;
             case socketMessagetype.CHECKLOBBY:
                 LobbyCheckClientMessage checkLobbyPayload = JsonUtility.FromJson<LobbyCheckClientMessage>(data); //convert data from base class to result class
                
                 if(checkLobbyPayload.lobbyExists == 0){
                      Debug.Log("does lobby exist (n): " + checkLobbyPayload.lobbyExists);
 
-                     _errorKeyMessage = "LobbyID " + _lobbyString + " Non-Existent";
+                     _errorKeyMessage = "Lobby Key " + _lobbyString + " Non-Existent";
                     _lobbyString = "null";
                     
                 }
@@ -179,7 +174,10 @@ public class SocketManager : MonoBehaviour
                 StartGameClientMessage startGamePayload = JsonUtility.FromJson<StartGameClientMessage>(data); //convert data from base class to result class
                 if(startGamePayload.startGame == 1){ //start game
                     Debug.Log("StartGame!");
-                    _multiplayerGameStarted = true;
+                    _multiplayerLobbyReady = true;
+                    if(_currentGamestate == GAMESTATE.HOSTSCREEN){
+                        _menuScript.LobbyKeyScreenToggle();
+                    }
                     _currentGamestate = GAMESTATE.STARTMULTIPLAYER;
                     _gameScript.SetGSGameState(_currentGamestate.ToString());
                     Debug.Log(_currentGamestate);
@@ -195,63 +193,55 @@ public class SocketManager : MonoBehaviour
         }
 
     }
-    void StartMultiplayerGame(){
-        _keyHostText.text = "Gamestarted!";
-    }
     public void BackToLobbyMenu(){ //called by the back button in the host key lobby.
         _menuScript.LobbyKeyScreenToggle(); //toggle visibility of the lobbykeyscreen.
         _currentGamestate = GAMESTATE.LOBBYMENU; //change gamestate back to lobbymenu
         _gameScript.SetGSGameState(_currentGamestate.ToString()); //update gamescript gamestate
-        _lobbyString = "null"; //make your lobby ID back to null or nonexistent
-        SendLobbyKeyMessage(true); // change your lobby ID on the server / true means send it to server not check if its real.
-        Debug.Log(_lobbyString);
+        _lobbyString = "null"; //make your lobby Key back to null or nonexistent
+        SendConnectMessage(); // change your lobby Key on the server / true means send it to server not check if its real.
         _multiplayerGameStarted = false; //make sure you exit game started.
     }
     public void HostGameButton(){
-        CreateLobbyKey(); //make new random lobby ID for hosted game.
-        SendLobbyKeyMessage(true); //send message to server telling it your lobby ID / you are hosting a game
+        SendLobbyKeyMessage(true); //send message to server telling you are hosting a game and to send back a unique lobby key
         _menuScript.LobbyKeyScreenToggle();
         _currentGamestate = GAMESTATE.HOSTSCREEN;
         _gameScript.SetGSGameState(_currentGamestate.ToString());
     }
     
     public void JoinGameButton(){
-        _lobbyString = _lobbyIDInput.text;
-        SendLobbyKeyMessage(false); //send message to server telling it what you entered for a ID guess and return a message if its correct.
+        _lobbyString = _lobbyKeyInput.text;
+        if(_lobbyString != "null"){ //make sure they didnt type null (the default lobbykey)
+            SendLobbyKeyMessage(false); //send message to server telling it what you entered for a Key guess and return a message if its correct.
+        }else{
+            _errorKeyMessage = "Lobby Key " + _lobbyString + " Non-Existent";
+        }
     }
-
+    void SendConnectMessage(){ //tell server you have connected.. send connect message
+        var payload = new LobbyKeyClientMessage{ //payload is what you are sending to server.
+            header = socketMessagetype.CONNECTDNB, //header tells server what type of message it is.
+            lobbyKey = _lobbyString
+        };
+        var data = Encoding.ASCII.GetBytes(JsonUtility.ToJson(payload)); //convert payload to transmittable data.(json file)
+        udp.Send(data, data.Length); //send data to server you connected to in start func. 
+    }
     void SendLobbyKeyMessage(bool m_hosting){
-        
-        if(m_hosting){ //if you are sending a host message
-            var payload = new LobbyIDClientMessage{ //payload is what you are sending to server.
-                header = socketMessagetype.HOSTDNBGAME, //header tells server what type of message it is.
-                lobbyID = _lobbyString
-            };
-            var data = Encoding.ASCII.GetBytes(JsonUtility.ToJson(payload)); //convert payload to transmittable data.(json file)
-            udp.Send(data, data.Length); //send data to server you connected to in start func. 
+        var m_header = socketMessagetype.NOTHING;
+        if(m_hosting){ //if you are sending a host message (which will give the client back a lobbyID)
+            m_header = socketMessagetype.HOSTDNBGAME;
         }
         else //if you are just trying to connect/join a game
         {
-            var payload = new LobbyIDClientMessage{ //payload is what you are sending to server.
-                header = socketMessagetype.JOINDNBGAME, //header tells server what type of message it is.
-                lobbyID = _lobbyString
-            };
-            var data = Encoding.ASCII.GetBytes(JsonUtility.ToJson(payload)); //convert payload to transmittable data.(json file)
-            udp.Send(data, data.Length); //send data to server you connected to in start func. 
+            m_header = socketMessagetype.JOINDNBGAME;
         }
+        var payload = new LobbyKeyClientMessage{ //payload is what you are sending to server.
+                header = m_header, //header tells server what type of message it is.
+                lobbyKey = _lobbyString
+        };
+        var data = Encoding.ASCII.GetBytes(JsonUtility.ToJson(payload)); //convert payload to transmittable data.(json file)
+        udp.Send(data, data.Length); //send data to server you connected to in start func. 
       
         
     }
-    void CreateLobbyKey(){ //Create a random string
-        _lobbyString = "";
-        for(int i=0; i<5; i++)
-        {        
-             _lobbyString += characters[UnityEngine.Random.Range(0, characters.Length)];
-        }
-        Debug.Log(_lobbyString);
-    }
-
-
 
 
 }
@@ -260,19 +250,20 @@ public enum socketMessagetype{
     CONNECTDNB = 121, //SENT FROM CLIENT TO SERVER
     UPDATEDNB = 122, //SENT FROM SERVER TO CLIENT
     NEWDNBCLIENT = 123, //SENT FROM SERVER TO CLIENT
-    HOSTDNBGAME = 124, //SENT FROM CLIENT TO SERVER tells server you are hosting a game + sends it your lobbyID
+    HOSTDNBGAME = 124, //SENT FROM CLIENT TO SERVER tells server you are hosting a game + sends it your lobbyKey
     JOINDNBGAME = 125,  //SENT FROM CLIENT TO SERVER tells server you are trying to join a game / send back if its correct
     CHECKLOBBY = 126, ///SENT FROM SERVER TO CLIENT tells client if the lobby was existent / had room to join
-    STARTGAME = 127 //SENT FROM SERVER TO CLIENT  when the lobby is full on players
+    STARTGAME = 127, //SENT FROM SERVER TO CLIENT  when the lobby is full on players
+    SENDLOBBYKEY = 128 //SENT FROM SERVER TO CLIENT to tell what the lobbykey is (so there isnt any duplicates)
 
 }
 
 [System.Serializable] class BaseSocketMessage{
     public socketMessagetype header; //enum header. of what its doing
 }
-[System.Serializable] class LobbyIDClientMessage: BaseSocketMessage
+[System.Serializable] class LobbyKeyClientMessage: BaseSocketMessage
 {
-   public string lobbyID; 
+   public string lobbyKey; 
 }
 
 [System.Serializable] class LobbyCheckClientMessage: BaseSocketMessage
@@ -285,7 +276,7 @@ public enum socketMessagetype{
 }
 [System.Serializable] class DisconnectPayload: BaseSocketMessage
 {
-   public string droppedID;
+   public string droppedKey;
 }
 
 
@@ -300,8 +291,8 @@ public enum socketMessagetype{
 }
 
 [System.Serializable] public class Player{
-    public string id;   
-    public string lobbyID; 
+    public string adress;   
+    public string lobbyKey; 
     public string hand; 
 }
 

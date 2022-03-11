@@ -30,6 +30,7 @@ public class MenuScript : MonoBehaviour
     {
         _loginScreenObj.SetActive(true);
         _gameScript.SetLocalGame(false); //tell gamescript its a multiplayer game
+        _socketManager.startUDP(); //Start UDP to connect to AWS
     }
     public void BacktoMainButton()//called by back buttons on every screen ==> goes to main menu.
     {
@@ -42,23 +43,30 @@ public class MenuScript : MonoBehaviour
 
         _socketManager.DestroyUDP(); //destroy UDP if it is running and you go back to main menu
     }
-    public void QuitButton()//called by quit button on main menu
+    public void QuitButton()//called by quit button on main menu / lobby menu
     {
         Application.Quit();
     }
-    public void LobbyMenuSceenButton()//called by multiplayer button on main menu
+    public void LobbyMenuSceenButton()//called by multiplayer button on main menu 
     {
+        //show lobby menu
         _lobbyMenuSceenScreenObj.SetActive(true);
+        //set gamestates.
         _socketManager.SetSOCKETGameState("LOBBYMENU");
         _gameScript.SetGSGameState("LOBBYMENU");
     }
-    public void MyAccountScreenToggle(){
+    public void MyAccountScreenToggle(){ //toggle my account screen visibility
         _myAccountScreenVisable = !_myAccountScreenVisable;
         _myAccountScreenObj.SetActive(_myAccountScreenVisable);
     }
-    public void LobbyKeyScreenToggle(){
+    public void LobbyKeyScreenToggle(){ //toggle lobbyKey screen visibility
         _keyLobbyVisable = !_keyLobbyVisable;
         _keyLobbyObj.SetActive(_keyLobbyVisable);
+    }
+    public void StartMPGame(){
+        _mainMenuObj.SetActive(false);
+        _lobbyMenuSceenScreenObj.SetActive(false);
+        _loginScreenObj.SetActive(false);
     }
 
 }

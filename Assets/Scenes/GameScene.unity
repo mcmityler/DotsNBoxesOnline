@@ -4833,7 +4833,7 @@ GameObject:
   m_Component:
   - component: {fileID: 659909304}
   m_Layer: 5
-  m_Name: WinnerObj
+  m_Name: GameoverObj
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -6129,10 +6129,11 @@ MonoBehaviour:
   _backgroundObj: {fileID: 785869360}
   _boardSettingsObj: {fileID: 202129646}
   _localPlayerNamesObj: {fileID: 123649193}
-  _winnerObj: {fileID: 659909303}
-  _winnerText: {fileID: 325263994}
   _boardSizeSlider: {fileID: 1832027767}
   _boardSizeText: {fileID: 1602662012}
+  _numberOfPlayerText: {fileID: 311823249}
+  _gameoverObj: {fileID: 659909303}
+  _winnerText: {fileID: 325263994}
   _playerScoreTextboxes:
   - {fileID: 501612239}
   - {fileID: 749972489}
@@ -6154,19 +6155,13 @@ MonoBehaviour:
   - {fileID: 524959737}
   - {fileID: 358140889}
   - {fileID: 732331949}
-  _numberOfPlayerText: {fileID: 311823249}
+  _localNameInputAnimator: {fileID: 123649195}
+  _turnOrderAnimator: {fileID: 1911056254}
   _playerTurnOrderText:
   - {fileID: 1946915683}
   - {fileID: 2138469655}
   - {fileID: 433870594}
   - {fileID: 1964420037}
-  _localPlayerInputObjs:
-  - {fileID: 1187892250}
-  - {fileID: 1619679476}
-  - {fileID: 902087192}
-  - {fileID: 1383941675}
-  _turnOrderAnimator: {fileID: 1911056254}
-  _localNameInputAnimator: {fileID: 123649195}
 --- !u!4 &871195791
 Transform:
   m_ObjectHideFlags: 0
@@ -6217,7 +6212,7 @@ MonoBehaviour:
     players: []
   _usernameInputText: {fileID: 1365425420}
   _passwordInputText: {fileID: 559523311}
-  _lobbyIDInput: {fileID: 1971795506}
+  _lobbyKeyInput: {fileID: 1971795506}
   _errorUserPassText: {fileID: 263607939}
   _errorLobbyKeyText: {fileID: 795890753}
   _keyHostText: {fileID: 1932117410}
@@ -8041,18 +8036,6 @@ MonoBehaviour:
       - m_Target: {fileID: 871195792}
         m_TargetAssemblyTypeName: MenuScript, Assembly-CSharp
         m_MethodName: MultiplayerScreenButton
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-      - m_Target: {fileID: 871195793}
-        m_TargetAssemblyTypeName: SocketManager, Assembly-CSharp
-        m_MethodName: startUDP
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}

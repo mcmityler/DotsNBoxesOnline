@@ -7,36 +7,36 @@ public class GameScript : MonoBehaviour
 {
 
     //----------------------------VARIABLES-------------------------------------
-    [Range(2.0F, 8.0F)] //slider in inspector, goes from 2 - 8
-    [SerializeField] private int _boardSize = 4; //Board size in game, (ie 4x4, max it can go is 8x8 before it goes off screen)
-    public Button cornerButton; //reference to the prefab for each button.
-    public GameObject box; //reference to prefab for the middle of the button (what changes colour to show who scored the point). also holds what buttons center takes to change colour.
-    private GameObject _canvas; //reference to canvas obj
-    [SerializeField] private GameObject _backgroundObj; //reference to background panel obj
+    private SocketManager _socketManager; //ref to socket manager script 
+    [Range(2.0F, 8.0F)][SerializeField] private int _boardSize = 4; //Board size in game, (ie 4x4, max it can go is 8x8 before it goes off screen) (range is what shows in the slider 2-8)
+    public Button cornerButton; //Prefab for buttons that surround the box
+    public GameObject box; //Prefab of center of buttons aka box. Also hold what buttons surround it and need to be pressed to change its color.
+    private GameObject _canvas; //Canvas obj (where all the UI is)
+    [SerializeField] private GameObject _backgroundObj; //Background panel of the entire canvas (also where the gameboard is drawn)
+    [SerializeField] private GameObject _boardSettingsObj, _localPlayerNamesObj; //Settings panel for picking board size and player amount //local player name inputs obj (toggles visibility)
+    [SerializeField] private Slider _boardSizeSlider; //slider on board setting panel to choose size of board
+    [SerializeField] private Text _boardSizeText;//Text that displays slider count
+    [SerializeField] private Text _numberOfPlayerText; //text that displays how many people are playing on settings screen
 
-    [SerializeField] private GameObject _boardSettingsObj, _localPlayerNamesObj; //reference to panel where you select board size. and the obj where the player enters their names if its a local game
-    [SerializeField] private GameObject _winnerObj; //reference to obj that displays the games winner and the restart button
-    [SerializeField] private Text _winnerText; //refference to gameobject that displays who won the game.
-    [SerializeField] private Slider _boardSizeSlider; //Reference to slider on board size panel.
-    [SerializeField] private Text _boardSizeText;//Reference to size text on board size panel.
-    private int[] _whosTurn = new int[] { 0, 0, 0, 0 }; //Whos turn is it?
-    [SerializeField] private Text[] _playerScoreTextboxes; //reference to  player 1 - 4 score text boxes
-    [SerializeField] private Text[] _endgameScoreTextboxes; //reference to  endgame 1 - 4 place score text boxes
-    [SerializeField] private Animator _endgameScoreAnimator; //reference to animator on engame score screen ( so you can change size depending on number of players)
-    [SerializeField] private Text[] _playerNameTextboxes; //reference to  player 1 & 2 score text boxes and Player 1 and 2 Name textboxes
-    [SerializeField] private InputField[] _localPlayerNameInput; //reference to player 1, 2, 3, and 4 input boxes
-    private string[] _localPlayerNames = new string[] { "Player 1", "Player 2", "Player 3", "Player 4" }; //what are the local entered names saved
-    private int _numberOfPlayers = 2; //how many players are playing
-    [SerializeField] private Text _numberOfPlayerText; //reference to display how many players you want playing
-    private int _turnRotation = 0; //what turn are you on.
+    // -------------------Gameover screen variables--------------------------
+    [SerializeField] private GameObject _gameoverObj; //gameover obj displays score screen and restart button
+    [SerializeField] private Text _winnerText; //text that displays who won the game or if it was a tie
+    [SerializeField] private Text[] _playerScoreTextboxes; //player 1 - 4 score text boxes
+    [SerializeField] private Text[] _endgameScoreTextboxes; //endgame 1 - 4 place score text boxes
+    [SerializeField] private Animator _endgameScoreAnimator; //animator on engame score screen (changes size of scorebox depending on how many players)
+    [SerializeField] private Text[] _playerNameTextboxes; //player 1-4 name text boxes in score (during game score screen.)
+    [SerializeField] private InputField[] _localPlayerNameInput; //player 1-4 name input for local games
+    private string[] _localPlayerNames = new string[] { "Player 1", "Player 2", "Player 3", "Player 4" }; //player 1-4 local names.
+    [SerializeField] private Animator _localNameInputAnimator; //local name input animator (changes how many names on local input screen)
+    private int _numberOfPlayers = 2; //how many players are allowed in your lobby
     private bool _localGame = true; //are you playing a local game 
-    private int[] _playerScores = new int[] { 0, 0, 0, 0 }; //player 1-4 scores 
-
+    private int[] _playerScores = new int[] { 0, 0, 0, 0 }; //player 1-4 scores (how many boxes have they collected)
     private Color32[] _localPlayerColors = new Color32[] { new Color32(0, 90, 188, 255), new Color32(137, 0, 0, 255), new Color32(1, 123, 0, 255), new Color32(209, 197, 0, 255) }; //Local players colors on the board.
-
-    [SerializeField] private Text[] _playerTurnOrderText; //reference to the textboxes for players turn order.
-    [SerializeField] private GameObject[] _localPlayerInputObjs; //Reference to the local player name input text boxes to change position and visibility 
-    private GameBoard _gameBoard = new GameBoard(); // gameboard is every button, box and if the buttons have been clicked yet.
+    [SerializeField] private Animator _turnOrderAnimator; //turn order animator
+     private int[] _whosTurn = new int[] { 0, 0, 0, 0 }; //holds randomized turn order
+    private int _turnRotation = 0; //placeholder for what turn you are currently on
+    [SerializeField] private Text[] _playerTurnOrderText; //text boxes that display whos turn it is in the turn order 
+    private GameBoard _gameBoard = new GameBoard(); //gameboard is every button, box and if the buttons have been clicked yet.
     private enum GAMESTATE
     { //Enum for game state / what point the game is currently at.
         STARTMENU,
@@ -50,96 +50,82 @@ public class GameScript : MonoBehaviour
         STARTMULTIPLAYER
     };
 
-    private GAMESTATE _currentGamestate = GAMESTATE.STARTMENU; //Actual reference to current game state
-
-     private SocketManager _socketManager; //reference to the socket manager script.
-    [SerializeField] private Animator _turnOrderAnimator; //reference to what animates the turn order
-    [SerializeField] private Animator _localNameInputAnimator; //reference to what animates the local name input when players are added/subtracted
+    private GAMESTATE _currentGamestate = GAMESTATE.STARTMENU; //current gamestate of game
 
     //----------------------------FUNCTIONS-------------------------------------
     void Awake()
-    { //when this gameobject is awoken do ...
+    {
         _canvas = GameObject.FindGameObjectWithTag("Canvas"); //give canvas reference to the canvas obj
         _socketManager = this.GetComponent<SocketManager>();//set reference to socket script
-        _socketManager.SetSOCKETGameState(_currentGamestate.ToString());
+        _socketManager.SetSOCKETGameState(_currentGamestate.ToString()); //set gamestate in socketmanager
     }
     void Update()
     {
-        if (_currentGamestate == GAMESTATE.SETTINGS)
-        { //if you are on the board settings menu
+        if (_currentGamestate == GAMESTATE.SETTINGS)//if you are on the board settings menu
+        { 
             _boardSize = (int)_boardSizeSlider.value; //make board the size that the slider is at.
             _boardSizeText.text = (_boardSizeSlider.value).ToString(); //make board size text on board settings panel update
         }
-        if (_currentGamestate == GAMESTATE.PLAYING)
-        { //if you are in the game play loop
+        if (_currentGamestate == GAMESTATE.PLAYING)//if you are in the game play loop
+        { 
             for (int i = 0; i < _numberOfPlayers; i++)
             {
-                _playerScoreTextboxes[i].text = _playerScores[i].ToString();
+                _playerScoreTextboxes[i].text = _playerScores[i].ToString(); //display score while game is running
             }
             _turnOrderAnimator.SetInteger("PlayerTurn", _turnRotation); //Change turn animation depending on turn rotation
         }
-        if (_currentGamestate == GAMESTATE.GAMEOVER)
+        if (_currentGamestate == GAMESTATE.GAMEOVER) //if you are on the gameover screen
         {
-            DisplayWinner();
-
+            DisplayWinner(); //Display the winner 
         }
     }
-    
-    public void SetLocalGame(bool m_local){
-        _localGame = m_local;
-        if(_localGame){ //are you playing a local game
-            _currentGamestate = GAMESTATE.SETTINGS;
-            _socketManager.SetSOCKETGameState(_currentGamestate.ToString()); //Change gamestate in socketmanager
-        }else{
-            _currentGamestate = GAMESTATE.LOGINREGISTER;
-            _socketManager.SetSOCKETGameState(_currentGamestate.ToString()); //Change gamestate in socketmanager
-        }
-    }
-    public void SetGSGameState(string m_state){
-        _currentGamestate = (GAMESTATE)System.Enum.Parse( typeof(GAMESTATE), m_state, true);
-        Debug.Log(_currentGamestate);
-    }
-    public void RestartButton()
+    public void SetLocalGame(bool m_local) //set if you playing a local or multiplayer game.
     {
-
-        foreach (GameObject _b in GameObject.FindGameObjectsWithTag("button"))
-        { //find all objects with the tag button to delete them from the scene
+        _localGame = m_local; //local or multiplayer?
+        if (_localGame)//if its a local game
+        { 
+            _currentGamestate = GAMESTATE.SETTINGS; //change gamestate
+            _socketManager.SetSOCKETGameState(_currentGamestate.ToString()); //Change gamestate in socketmanager
+        }
+        else //if its a multiplayer game 
+        {
+            _currentGamestate = GAMESTATE.LOGINREGISTER;//change gamestate
+            _socketManager.SetSOCKETGameState(_currentGamestate.ToString()); //Change gamestate in socketmanager
+        }
+    }
+    public void SetGSGameState(string m_state) //change gamestate if you need to from socket manager
+    {
+        _currentGamestate = (GAMESTATE)System.Enum.Parse(typeof(GAMESTATE), m_state, true);//change string into a enum. (true means case doesnt matter)
+    }
+    public void RestartButton() //restart button on game over screen.
+    {
+        foreach (GameObject _b in GameObject.FindGameObjectsWithTag("button"))//find all objects with the tag button to delete them from the scene
+        { 
             Destroy(_b);
         }
-        foreach (GameObject _box in _gameBoard.boxes)
-        { ///find all boxes and destroy them
+        foreach (GameObject _box in _gameBoard.boxes)///find all boxes and destroy them
+        { 
             Destroy(_box);
         }
-        _gameBoard = new GameBoard();
+        _gameBoard = new GameBoard(); //create new gameboard 
         for (int i = 0; i < 4; i++)
         {
-            _whosTurn[i] = 0; //reset turns so you can rerandomize them.
+            _whosTurn[i] = 0; //reset turn order so you can re-randomize them.
             _playerScores[i] = 0; //set scores to 0
             _playerScoreTextboxes[i].text = _playerScores[i].ToString(); //display scores in text box
-            if (_localGame)
+            if (_localGame) // if local game.
             {
-                _playerTurnOrderText[i].text = _localPlayerNames[i];
-                _playerTurnOrderText[i].color = _localPlayerColors[i];
+                _playerTurnOrderText[i].text = _localPlayerNames[i]; //reset names of text boxes in the turn order so when it resets its back to players 1-4 in correct order
+                _playerTurnOrderText[i].color = _localPlayerColors[i]; //reset color of turn order text boxes ^^
             }
         }
-        foreach(Text text in _endgameScoreTextboxes){ //Clear end game text boxes.
-            text.text = "";
-        }
-        _winnerObj.SetActive(false); //make gg text disappear.
-        if (_localGame)
-        {
-            _currentGamestate = GAMESTATE.SETTINGS; //change gamestate 
-            _socketManager.SetSOCKETGameState(_currentGamestate.ToString()); //Change gamestate in socketmanager
-            _boardSettingsObj.SetActive(true);  //make board setting visable
-            //_localPlayerNamesObj.SetActive(false); //Make name input invisible.
-        }
+        _gameoverObj.SetActive(false); //make gameover panel invisible.
         _turnRotation = 0; // go back to the start of turn order
-        _localNameInputAnimator.SetInteger("PlayerAmount", _numberOfPlayers);
-        while (_turnOrderAnimator.GetInteger("PlayerTurn") != 0)
+        _localNameInputAnimator.SetInteger("PlayerAmount", _numberOfPlayers); //tell input animtor to show the correct number of players
+        while (_turnOrderAnimator.GetInteger("PlayerTurn") != 0) //cycle through turn order until its back to 0, so it shows players 1-4 in order.
         {
-            Debug.Log("hey");
-            var m_i = _turnOrderAnimator.GetInteger("PlayerTurn");
-            if (m_i > _numberOfPlayers)
+            int m_i = _turnOrderAnimator.GetInteger("PlayerTurn");
+            if (m_i >= _numberOfPlayers)
             {
                 _turnOrderAnimator.SetInteger("PlayerTurn", 0);
             }
@@ -149,14 +135,19 @@ public class GameScript : MonoBehaviour
             }
 
         }
-
+        if (_localGame) //if its a local game
+        {
+            _currentGamestate = GAMESTATE.SETTINGS; //change gamestate 
+            _socketManager.SetSOCKETGameState(_currentGamestate.ToString()); //Change gamestate in socketmanager
+            _boardSettingsObj.SetActive(true);  //make board settings visable
+        }
     }
-    public void AddPlayerButton()
+    public void AddPlayerButton() //Add button on board setting panel
     {
-        if (_numberOfPlayers < 4)
+        if (_numberOfPlayers < 4)//add if num is less then max player
         {
             _numberOfPlayers++;
-            _numberOfPlayerText.text = _numberOfPlayers.ToString();
+            _numberOfPlayerText.text = _numberOfPlayers.ToString(); //display how many are allowed in lobby
         }
         if (_localGame)
         {
@@ -166,10 +157,10 @@ public class GameScript : MonoBehaviour
     }
     public void MinusPlayerButton()
     {
-        if (_numberOfPlayers > 2)
+        if (_numberOfPlayers > 2) //subtract if more then min player
         {
             _numberOfPlayers--;
-            _numberOfPlayerText.text = _numberOfPlayers.ToString();
+            _numberOfPlayerText.text = _numberOfPlayers.ToString(); //display how many are allowed in lobby
         }
         if (_localGame)
         {
@@ -177,51 +168,37 @@ public class GameScript : MonoBehaviour
             _turnOrderAnimator.SetInteger("PlayerAmount", _numberOfPlayers);//Animate how many players are shown in turn order
         }
     }
-    public void StartMultiplayerGame(){
-        
-    }
-    public void GameStartButton()
-    { //when you click the start button on board setting screen
-        _boardSettingsObj.SetActive(false); //make panel disappear.
+    public void GameStartButton()//start game button from board setting panel
+    { 
+        _boardSettingsObj.SetActive(false); //hide board setting panel
         _boardSize = (int)_boardSizeSlider.value; //make board the size that the slider is at.
-        CreateGame(); //create the game board with the size in slider
+        CreateGame(); //create the game board size
         _currentGamestate = GAMESTATE.PLAYING;//Change gamestate to playing game
         _socketManager.SetSOCKETGameState(_currentGamestate.ToString()); //Change gamestate in socketmanager
-        RandomizeTurns();
-        if (_localGame)
-        {//if you entered a name and its a local game make player name appear in text boxes
-
-            for (int i = 0; i < _numberOfPlayers; i++) //cycle all players in game
+        RandomizeTurns(); //randomize who turn order.
+        if (_localGame) //if its a local game
+        {
+            for (int i = 0; i < _numberOfPlayers; i++)
             {
-
+                //Display local names if they entered them
                 if (_localPlayerNameInput[i].text != "")
                 {  //check names arent left blank
 
-                    _localPlayerNames[i] = _localPlayerNameInput[i].text; //set local player names to what was inputed if anything.
-                    Debug.Log(_localPlayerNames[i]);
-                    _playerNameTextboxes[i].text = _localPlayerNames[i] + ": "; //set the text boxes at the score to the names.
-
-                    // _playerTurnOrderText[i].text = _localPlayerNames[i]; // Set the text boxes in the turn order to the names.
-
+                    _localPlayerNames[i] = _localPlayerNameInput[i].text; //display name in text box
+                    _playerNameTextboxes[i].text = _localPlayerNames[i] + ": "; //display names in current score screen.
                 }
                 ArrangeTurnOrder(i); //Arrange text and color of text boxes in bottom left
             }
         }
 
     }
-    private void ArrangeTurnOrder(int m_turnOrder)
+    private void ArrangeTurnOrder(int m_turnOrder) //change names and color in turn order
     {
-        Debug.Log(_whosTurn[m_turnOrder]);
         _playerTurnOrderText[m_turnOrder].text = _localPlayerNames[(_whosTurn[m_turnOrder]) - 1]; //Change text to correct name
         _playerTurnOrderText[m_turnOrder].color = _localPlayerColors[(_whosTurn[m_turnOrder]) - 1]; //Change color of text box to players color
-
     }
-    private void CreateGame()
+    private void CreateGame() //create game board
     {
-
-
-
-
         for (int b = 0; b < _boardSize + 1; b++)
         {
             for (int i = 0; i < _boardSize; i++)
@@ -281,24 +258,25 @@ public class GameScript : MonoBehaviour
         }
     }
 
-    private void RandomizeTurns()
+    private void RandomizeTurns() //randomize turn order
     {
-
-        for (int i = 0; i < _numberOfPlayers; i++)
+        for (int i = 0; i < _numberOfPlayers; i++) 
         {
-            if (_whosTurn[i] == 0)
+            //cycle through NumofPlayer, give them a random position
+            if (_whosTurn[i] == 0) //if turn is a 0 random it.
             {
                 _whosTurn[i] = Random.Range(1, _numberOfPlayers + 1);
             }
             for (int x = 0; x < i; x++)
             {
+                //if a turn has an identical number set to 0
                 if (_whosTurn[x] == _whosTurn[i] && x != i)
                 {
                     _whosTurn[i] = 0;
                 }
             }
-            //Debug.Log(_whosTurn[i]);
         }
+        //recursive if you still have a person without a turn.
         for (int i = 0; i < _numberOfPlayers; i++)
         {
             if (_whosTurn[i] == 0)
@@ -308,23 +286,23 @@ public class GameScript : MonoBehaviour
         }
     }
 
-    public void ButtonClicked(Button m_b, bool m_row)
-    { //function is called when row or column button is pressed, passes button pressed & bool for whether it is a row or col button.
+    public void ButtonClicked(Button m_b, bool m_row) //function is called when row or column button is pressed, passes button pressed & bool for whether it is a row or col button.
+    {
         bool m_alreadyClicked = false; //temp holds if it has been pressed in the past
-        if (m_row && _gameBoard.rowClicked[m_b.name] != true)
-        {  //check it it is a ROW button && if it HASNT been pressed.
+        if (m_row && _gameBoard.rowClicked[m_b.name] != true)//check it it is a ROW button && if it HASNT been pressed.
+        {  
             _gameBoard.rowClicked[m_b.name] = true;
         }
-        else if (!m_row && _gameBoard.colClicked[m_b.name] != true)
-        {//check it it is a COL button && if  it HASNT been pressed.
+        else if (!m_row && _gameBoard.colClicked[m_b.name] != true)//check it it is a COL button && if  it HASNT been pressed.
+        {
             _gameBoard.colClicked[m_b.name] = true;
         }
-        else
-        { //tells script that this button has already been pressed in the past
+        else //tells script that this button has already been pressed in the past
+        {
             m_alreadyClicked = true;
         }
-        if (!m_alreadyClicked)
-        { //if button hasnt been clicked then change the buttons colour and check if the box needs to be filled in.
+        if (!m_alreadyClicked)//if button hasnt been clicked then change the buttons colour and check if the box needs to be filled in.
+        { 
 
             if (_whosTurn[_turnRotation] == 1)
             {//FIRST PLAYER
@@ -347,26 +325,26 @@ public class GameScript : MonoBehaviour
             m_tempColor.normalColor = m_b.GetComponent<Image>().color; //set normal color to what color button should be.
             m_b.GetComponent<Button>().colors = m_tempColor; //set buttons color block to temp color block
 
-            CheckBoxes(); //check if box needs to be filled in. 
+            CheckBoxes(); //check if box needs to be filled in. (check if it is surrounded by 4 pressed buttons)
         }
     }
     private void CheckBoxes()
     {
 
-        bool m_didCheck = false; //holds whether there are any unclaimed boxes left
+        bool m_boxesLeftCheck = false; //holds whether there are any unclaimed boxes left
         bool[] m_clicked = new bool[4]; //temp array to hold bools of whether its been clicked.
         bool m_pointGained = false; //holds whether you scored a point or not, basically to change turns, if point gained dont change turn.
 
-        foreach (GameObject box in _gameBoard.boxes)
-        { //go through list of boxes in game
-            if (box.tag == "unchecked")
-            { //make sure box hasnt been claimed already
+        foreach (GameObject box in _gameBoard.boxes)//go through list of boxes in game
+        { 
+            if (box.tag == "unchecked")//make sure box hasnt been claimed already
+            { 
                 List<Button> temp = box.GetComponent<BoxScript>().buttonList; //temp list of buttons surrounding box
                 int counter = 0; //counter to distinguish buttons between row and column
                 foreach (Button but in temp)
                 {
-                    if (counter < 2)
-                    { //first two buttons stored on box are always ROW buttons
+                    if (counter < 2) //first two buttons stored on box are always ROW buttons
+                    {
                         //check and add whether button was m_clicked to temp list
                         if (_gameBoard.rowClicked[but.name])
                         {
@@ -377,8 +355,8 @@ public class GameScript : MonoBehaviour
                             m_clicked[counter] = false;
                         }
                     }
-                    else if (counter < 4)
-                    {//second two buttons stored on box are always COL buttons
+                    else if (counter < 4)//second two buttons stored on box are always COL buttons
+                    {
                         //check and add whether button was m_clicked to temp list
                         if (_gameBoard.colClicked[but.name])
                         {
@@ -390,15 +368,15 @@ public class GameScript : MonoBehaviour
                         }
 
                     }
-                    else
-                    { //button shouldnt exist
+                    else //button shouldnt exist
+                    {
                         Debug.Log("button shouldnt exist");
                     }
                     counter++;
 
                 }
-                if (m_clicked[0] && m_clicked[1] && m_clicked[2] && m_clicked[3])
-                { // if all buttons in temp m_clicked array were pressed do this.
+                if (m_clicked[0] && m_clicked[1] && m_clicked[2] && m_clicked[3]) // if all buttons in temp m_clicked array were pressed do this.
+                {
                     box.GetComponent<BoxScript>().ButtonSurrounded(_whosTurn[_turnRotation], _localPlayerColors[_whosTurn[_turnRotation] - 1]); //pass to box script to change its colour and depending on whos turn it is.
                     m_pointGained = true; //point is gained
                     _playerScores[_whosTurn[_turnRotation] - 1]++;//add points to whoevers turns score.
@@ -407,7 +385,7 @@ public class GameScript : MonoBehaviour
 
             }
         }
-        //if point isnt gained change
+        //if point isnt gained change turn
         if (!m_pointGained)
         {
             _turnRotation++;
@@ -416,59 +394,58 @@ public class GameScript : MonoBehaviour
                 _turnRotation = 0;
             }
         }
-        //check if there are any unchecked boxes left
+        //check if there are any unchecked boxes left (if game is over)
         foreach (GameObject box in _gameBoard.boxes)
         {
             if (box.tag == "unchecked")
             {
-                m_didCheck = true;
+                m_boxesLeftCheck = true;
                 break;
             }
         }
         //if no more unchecked boxes left end game.
-        if (!m_didCheck && _currentGamestate != GAMESTATE.GAMEOVER)
+        if (!m_boxesLeftCheck && _currentGamestate != GAMESTATE.GAMEOVER)
         {
             _currentGamestate = GAMESTATE.GAMEOVER;
             _socketManager.SetSOCKETGameState(_currentGamestate.ToString()); //Change gamestate in socketmanager
-            for (int i = 0; i < _numberOfPlayers; i++)
-            { //Update score one last time!!
+            for (int i = 0; i < _numberOfPlayers; i++)//Update score one last time!!
+            { 
                 _playerScoreTextboxes[i].text = _playerScores[i].ToString();
             }
         }
-        else
+        else 
         {
-            m_didCheck = false;
+            m_boxesLeftCheck = false; //reset for next check
         }
-
     }
-    private void DisplayWinner()
+    private void DisplayWinner() //Display Winner / Score screen scores.
     {
-        _endgameScoreAnimator.SetInteger("NumberOfPlayers", _numberOfPlayers);
-        _winnerObj.SetActive(true); //show the endgame score screen and the restart btn
-        int[] m_playerPlace = new int[] { 0, 0, 0, 0 };
+        _endgameScoreAnimator.SetInteger("NumberOfPlayers", _numberOfPlayers); //change size of score screen depending on player number
+        _gameoverObj.SetActive(true); //show the endgame score screen and the restart btn
+        int[] m_playerPlace = new int[] { 0, 0, 0, 0 }; //check what place each player finished in.
         for (int i = 0; i < _numberOfPlayers; i++)
         {
             for (int x = 0; x < _numberOfPlayers; x++)
             {
                 if (i != x)
                 {
-                    if (_playerScores[i] > _playerScores[x])
+                    if (_playerScores[i] > _playerScores[x]) //if a player has a greater score than another, add points to their score.
                     {
                         m_playerPlace[i]++;
                     }
                 }
             }
         }
-        int m_firstPlace = -1;
+        int m_firstPlace = -1; //whos in first place, if its -1 no ones in first.
         List<int> m_secondPlace = new List<int>();
         List<int> m_thirdPlace = new List<int>();
         List<int> m_fourthPlace = new List<int>();
         for (int i = 0; i < _numberOfPlayers; i++)
         {
-
+            //set players places
             if (m_playerPlace[i] == 3)
             {
-                m_firstPlace = i; 
+                m_firstPlace = i;
             }
             if (m_playerPlace[i] == 2)
             {
@@ -484,11 +461,11 @@ public class GameScript : MonoBehaviour
             }
 
         }
-        if (m_firstPlace == -1)
+        if (m_firstPlace == -1) //if its a 4player game and -1 its a tie.
         {
             _winnerText.text = "Tie Game!";
         }
-        
+
         int m_ctr = 0;
         //check that you have a player in first (if 4 player)
         if (m_firstPlace != -1)
@@ -523,6 +500,13 @@ public class GameScript : MonoBehaviour
 
     }
 
+    public void StartMultiplayerGameBoard(){ 
+        _boardSettingsObj.SetActive(false);
+        CreateGame();
+        
+    }
+    
+
     // -------------------------CLASSES ---------------------------------------
     [System.Serializable]
     class GameBoard
@@ -532,9 +516,6 @@ public class GameScript : MonoBehaviour
         public Dictionary<string, bool> rowClicked = new Dictionary<string, bool>();//dictionary of bools in row named by their position on a graph, tells whether buttons been pressed or not
         public Dictionary<string, bool> colClicked = new Dictionary<string, bool>();//dictionary of bools in column named by their position on a graph, tells whether buttons been pressed or not
         public List<GameObject> boxes = new List<GameObject>(); //list of boxed (the center of whats between 4 buttons and what changes colour)
-
-
-
     }
 
 
