@@ -14,8 +14,8 @@ public class GameScript : MonoBehaviour
     private GameObject _canvas; //Canvas obj (where all the UI is)
     [SerializeField] private GameObject _backgroundObj; //Background panel of the entire canvas (also where the gameboard is drawn)
     [SerializeField] private GameObject _boardSettingsObj, _localPlayerNamesObj; //Settings panel for picking board size and player amount //local player name inputs obj (toggles visibility)
-    [SerializeField] private Slider _boardSizeSlider; //slider on board setting panel to choose size of board
-    [SerializeField] private Text _boardSizeText;//Text that displays slider count
+    [SerializeField] private Slider _boardSizeSlider, _mpBoardSizeSlider; //slider on board setting panel to choose size of board // slider on multiplayer menu
+    [SerializeField] private Text _boardSizeText, _mpBoardSizeText;//Text that displays slider count// text for slider on multiplayer menu
     [SerializeField] private Text _numberOfPlayerText; //text that displays how many people are playing on settings screen
 
     // -------------------Gameover screen variables--------------------------
@@ -77,6 +77,9 @@ public class GameScript : MonoBehaviour
         if (_currentGamestate == GAMESTATE.GAMEOVER) //if you are on the gameover screen
         {
             DisplayWinner(); //Display the winner 
+        }
+        if(_currentGamestate == GAMESTATE.LOBBYMENU){//if you are on the multiplayer lobby menu screen
+            _mpBoardSizeText.text = (_mpBoardSizeSlider.value).ToString(); //display slider size
         }
     }
     public void SetLocalGame(bool m_local) //set if you playing a local or multiplayer game.
@@ -212,7 +215,7 @@ public class GameScript : MonoBehaviour
                 rectTransformRow.position = new Vector2(_backgroundObj.GetComponent<RectTransform>().rect.width / 2 + (_boardSize / 2 * 80) - i * 80, _backgroundObj.GetComponent<RectTransform>().rect.height / 2 + (_boardSize / 2 * 80) + 35 - b * 80);
                 rButton.name = (b.ToString() + i.ToString() + "r"); //set name of rButton
                 _gameBoard.rowButtons.Add(rButton.name, rButton); //add rButton to dictionary with rButton name
-                _gameBoard.rowButtons[rButton.name].onClick.AddListener(() => ButtonClicked(rButton, true)); //add listener to rButton so it knows when its clicked and which is clicked. ************ PASSES TRUE SO IT KNOWS ITS A ROW
+                _gameBoard.rowButtons[rButton.name].onClick.AddListener(() => ButtonClicked(rButton, true, true)); //add listener to rButton so it knows when its clicked and which is clicked. ************ PASSES TRUE SO IT KNOWS ITS A ROW
                 _gameBoard.rowClicked.Add(rButton.name, false); //add if rButton is clicked to dictionary with rButton name
 
 
@@ -227,7 +230,7 @@ public class GameScript : MonoBehaviour
                 rectTransformCol.eulerAngles = new Vector3(rectTransformCol.transform.eulerAngles.x, rectTransformCol.transform.eulerAngles.y, 90);
                 cButton.name = (i.ToString() + b.ToString() + "c");//set name of cButton
                 _gameBoard.colButtons.Add(cButton.name, cButton); //add cButton to dictionary with cButton name
-                _gameBoard.colButtons[cButton.name].onClick.AddListener(() => ButtonClicked(cButton, false));//add listener to cButton so it knows when its clicked and which is clicked. ************ PASSES FALSE SO IT KNOWS ITS A COL
+                _gameBoard.colButtons[cButton.name].onClick.AddListener(() => ButtonClicked(cButton, false, true));//add listener to cButton so it knows when its clicked and which is clicked. ************ PASSES FALSE SO IT KNOWS ITS A COL
                 _gameBoard.colClicked.Add(cButton.name, false);//add if cButton is clicked to dictionary with cButton name
             }
         }
@@ -285,8 +288,18 @@ public class GameScript : MonoBehaviour
             }
         }
     }
+    public void MPButtonClicked(string m_bName, int m_row){ 
+        //convert int from server to bool for client
+        bool m_tempBool = false;
+        if(m_row == 0){
+            m_tempBool = false;
+        }if(m_row == 1){
+            m_tempBool = true;
+        }
+        ButtonClicked(GameObject.Find(m_bName).GetComponent<Button>(),m_tempBool, false); //false to say you didnt press it you got it from the server. 
+    }
 
-    public void ButtonClicked(Button m_b, bool m_row) //function is called when row or column button is pressed, passes button pressed & bool for whether it is a row or col button.
+    public void ButtonClicked(Button m_b, bool m_row, bool _youPressed) //function is called when row or column button is pressed, passes button pressed & bool for whether it is a row or col button.
     {
         bool m_alreadyClicked = false; //temp holds if it has been pressed in the past
         if (m_row && _gameBoard.rowClicked[m_b.name] != true)//check it it is a ROW button && if it HASNT been pressed.
@@ -326,6 +339,20 @@ public class GameScript : MonoBehaviour
             m_b.GetComponent<Button>().colors = m_tempColor; //set buttons color block to temp color block
 
             CheckBoxes(); //check if box needs to be filled in. (check if it is surrounded by 4 pressed buttons)
+
+            if(!_localGame && _youPressed) //if multi AND you pressed button send to other players
+            {
+                //Convert bool to int to send button to server
+                int m_tempint = 0;
+                if(m_row){
+                    m_tempint = 1;
+                }
+                if(!m_row){
+                    m_tempint = 0;
+                }
+                //send button to server
+                _socketManager.SendButtonMessage(m_b.name, m_tempint);
+            }
         }
     }
     private void CheckBoxes()
@@ -500,9 +527,23 @@ public class GameScript : MonoBehaviour
 
     }
 
-    public void StartMultiplayerGameBoard(){ 
-        _boardSettingsObj.SetActive(false);
-        CreateGame();
+   
+    public int GetPlayerSize(){ //get player size froms script while its private
+        return _numberOfPlayers;
+    }
+    public int GetBoardSize(){ //get size of board from script while its private
+        return _boardSize;
+    }
+    public void SetSizeofBoard(int m_sizeofboard){ //set size of board from multiplayer
+        _boardSize = m_sizeofboard;
+        if(m_sizeofboard == -1){
+             _boardSize = (int)_mpBoardSizeSlider.value; //make board the size that the slider is at.
+        }
+    }
+     public void StartMultiplayerGameBoard(){  //everything needed to start a multiplayer board
+        
+        _boardSettingsObj.SetActive(false); //hide board settings to see board
+        CreateGame(); //create board based off board size
         
     }
     

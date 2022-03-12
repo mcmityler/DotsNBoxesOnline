@@ -1,3 +1,4 @@
+from re import A
 import socket
 import _thread
 import threading
@@ -22,6 +23,8 @@ class SocketMessageType(IntEnum):
     CHECKLOBBY = 126  # sent from the server to the client to tell if lobby is existent
     STARTGAME = 127 #sent from server to client when the lobby is full on players
     SENDLOBBYKEY = 128 #from the server to client to tell what the lobbykey is (so there isnt any duplicates)
+    SENDBUTTON = 130 #SENT FROM CLIENT TO SERVER tells server to send other player button pressed
+    GETBUTTON =131 #SENT FROM SERVER TO CLIENT tells client what the other player pressed
 
 
 # listen for messages from server..
@@ -44,18 +47,24 @@ def handle_messages(sock: socket.socket):
                 print(clients[addr]['lobbyKey'])
             if(data['header'] == SocketMessageType.HOSTDNBGAME):
                 CreateNewLobby(addr, sock)
-                
+                clients[addr]['SizeofBoard'] = data['SizeofBoard']
                 print(clients[addr]['lobbyKey'])
             if(data['header'] == SocketMessageType.JOINDNBGAME):
                 CheckJoin(data, addr, sock)
 
                 print(clients[addr]['lobbyKey'])
+            if(data['header'] == SocketMessageType.SENDBUTTON):
+                SendButtonToOtherPlayers(data,addr,sock)#send button to other clients
+
         else:  # if you arent part of the contact list then do the connection
             # if they are connecting..
             if(data['header'] == SocketMessageType.CONNECTDNB):
                 clients[addr] = {}  # -----------------create new client --------------
                 #clients[addr]['lastBeat'] = datetime.now()
                 clients[addr]['lobbyKey'] = data['lobbyKey']
+                clients[addr]['playerLimit'] = 2
+                clients[addr]['SizeofBoard'] = 4
+
                 #clients[addr]['hand'] = "null"
                 # tell your own client connected that you connected to it.
                 message = {"header": 123, "players": [
@@ -88,33 +97,45 @@ def CreateNewLobby(m_addr, m_sock): # create new lobby key that is Unique and no
 def CheckJoin(m_data, m_addr, m_sock):
     _existingLobbyKey = 0
     _playerCount = 2
+    m_intToClient = 0
+    m_boardSize = 4
     for c in clients:
         if(m_data['lobbyKey'] == clients[c]['lobbyKey']):
             # count how many clients have that lobbyKey
             _existingLobbyKey += 1
+            m_boardSize = clients[c]['SizeofBoard']
             
 
-    if(_existingLobbyKey == 0):
-        # tell client it doesnt exist
-        message = {"header": 126, "lobbyExists": int(0)}
-        m = json.dumps(message)
-        m_sock.sendto(bytes(m, 'utf8'), m_addr)
+    if(_existingLobbyKey == 0): # if lobby doesnt exist tell client
+        m_intToClient = 0 #message to client to tell its non existent
         print("DOESNT EXIST")
-    elif(_existingLobbyKey == 1):
-        # tell client lobby exists (NEED TO CHECK WHAT THE ROOM SIZE IS)
-        clients[m_addr]['lobbyKey'] = m_data['lobbyKey']
+    elif(_existingLobbyKey < _playerCount): #if lobbyKey is correct and lobby isnt full then add player
+        m_intToClient = 1 #message to server to tell it is real and has room
+        clients[m_addr]['lobbyKey'] = m_data['lobbyKey'] #set this players lobby key
+        clients[m_addr]['SizeofBoard'] = m_boardSize #set this players lobby key
         _existingLobbyKey += 1 #add this player to the player count
-        message = {"header": 126, "lobbyExists": int(1)}
-        m = json.dumps(message)
-        m_sock.sendto(bytes(m, 'utf8'), m_addr)
         print("DOES EXIST")
-    if(_existingLobbyKey == _playerCount):
+    elif(_existingLobbyKey == _playerCount): #if the lobby is full, tell client.
+        m_intToClient = 2#message to server to tell it is full
+        print("FULL LOBBY")
+    
+    message = {"header": 126, "lobbyExists": int(m_intToClient), "SizeofBoard": int(m_boardSize)}# message sent to server whether its full,existent, or room
+    print(message)
+    m = json.dumps(message)
+    m_sock.sendto(bytes(m, 'utf8'), m_addr)
+    if(_existingLobbyKey == _playerCount): #if the lobby is full after adding 1 to existing players then start the game.
         for c in clients: #tell clients in lobby game is ready to start
             if(m_data['lobbyKey'] == clients[c]['lobbyKey']):
                 message = {"header": 127, "startGame": int(1)}
                 m = json.dumps(message)
                 m_sock.sendto(bytes(m,'utf8'), (c[0],c[1]))
 
+def SendButtonToOtherPlayers(m_data, m_addr, m_sock): #send other client buttons that players press
+    for c in clients:
+        if(clients[m_addr]['lobbyKey'] == clients[c]['lobbyKey'] and c != m_addr): #if you have the same lobby key and its not your address send it the button pressed
+            message = {"header": 131, "buttonName": str(m_data['buttonName']), "isRowButton": int(m_data['isRowButton'])}
+            m = json.dumps(message)
+            m_sock.sendto(bytes(m,'utf8'), (c[0],c[1]))
 
 def main():
     PORT = 12345
