@@ -37,7 +37,7 @@ public class SocketManager : MonoBehaviour
         LOGINREGISTER,
         LOBBYMENU,
         HOSTSCREEN,
-        STARTMULTIPLAYER
+        PLAYINGMULTIPLAYER
     };
     private GAMESTATE _currentGamestate = GAMESTATE.STARTMENU; //what is the current gamestate
     private string _lobbyString = "null"; //current lobby string
@@ -179,6 +179,7 @@ public class SocketManager : MonoBehaviour
                 else if(checkLobbyPayload.lobbyExists == 1){ //Message from server telling it is non existent (0)
                      Debug.Log("does lobby exist (y): " + checkLobbyPayload.lobbyExists);
                     _gameScript.SetSizeofBoard(checkLobbyPayload.SizeofBoard); //set board size based off what the hosts board size is.
+                    _gameScript.SetMyPlayerNumber(checkLobbyPayload.YourPlayerNumber); //set what player number I am in the lobby
                 }
                     
                 else if (checkLobbyPayload.lobbyExists == 2){  //Message from server telling it is full (2)
@@ -197,8 +198,9 @@ public class SocketManager : MonoBehaviour
                     if(_currentGamestate == GAMESTATE.HOSTSCREEN){
                         _menuScript.LobbyKeyScreenToggle();
                     }
-                    _currentGamestate = GAMESTATE.STARTMULTIPLAYER;
+                    _currentGamestate = GAMESTATE.PLAYINGMULTIPLAYER;
                     _gameScript.SetGSGameState(_currentGamestate.ToString());
+                    _gameScript.MPSetTurnOrder(startGamePayload.RandomOrder); //set random turn order
                     Debug.Log(_currentGamestate);
                     _errorKeyMessage = "";
                 }
@@ -233,6 +235,7 @@ public class SocketManager : MonoBehaviour
         _menuScript.LobbyKeyScreenToggle();
         _currentGamestate = GAMESTATE.HOSTSCREEN;
         _gameScript.SetGSGameState(_currentGamestate.ToString());
+        _gameScript.SetMyPlayerNumber(1); //set player number inlobby (since you are hosing you are first)
     }
     
     public void JoinGameButton(){
@@ -313,10 +316,12 @@ public enum socketMessagetype{
 {
     public int lobbyExists; 
     public int SizeofBoard;
+    public int YourPlayerNumber;
 }
 [System.Serializable] class StartGameClientMessage: BaseSocketMessage
 {
     public int startGame; 
+    public int[] RandomOrder;
 }
 [System.Serializable] class DisconnectPayload: BaseSocketMessage
 {

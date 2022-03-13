@@ -95,38 +95,39 @@ def CreateNewLobby(m_addr, m_sock): # create new lobby key that is Unique and no
 
 
 def CheckJoin(m_data, m_addr, m_sock):
-    _existingLobbyKey = 0
-    _playerCount = 2
+    m_existingLobbyKey = 0
+    m_playerCount = 2
     m_intToClient = 0
     m_boardSize = 4
     for c in clients:
         if(m_data['lobbyKey'] == clients[c]['lobbyKey']):
             # count how many clients have that lobbyKey
-            _existingLobbyKey += 1
+            m_existingLobbyKey += 1
             m_boardSize = clients[c]['SizeofBoard']
             
 
-    if(_existingLobbyKey == 0): # if lobby doesnt exist tell client
+    if(m_existingLobbyKey == 0): # if lobby doesnt exist tell client
         m_intToClient = 0 #message to client to tell its non existent
         print("DOESNT EXIST")
-    elif(_existingLobbyKey < _playerCount): #if lobbyKey is correct and lobby isnt full then add player
+    elif(m_existingLobbyKey < m_playerCount): #if lobbyKey is correct and lobby isnt full then add player
         m_intToClient = 1 #message to server to tell it is real and has room
         clients[m_addr]['lobbyKey'] = m_data['lobbyKey'] #set this players lobby key
         clients[m_addr]['SizeofBoard'] = m_boardSize #set this players lobby key
-        _existingLobbyKey += 1 #add this player to the player count
+        m_existingLobbyKey += 1 #add this player to the player count
         print("DOES EXIST")
-    elif(_existingLobbyKey == _playerCount): #if the lobby is full, tell client.
+    elif(m_existingLobbyKey == m_playerCount): #if the lobby is full, tell client.
         m_intToClient = 2#message to server to tell it is full
         print("FULL LOBBY")
     
-    message = {"header": 126, "lobbyExists": int(m_intToClient), "SizeofBoard": int(m_boardSize)}# message sent to server whether its full,existent, or room
+    message = {"header": 126, "lobbyExists": int(m_intToClient), "SizeofBoard": int(m_boardSize), "YourPlayerNumber": int(m_existingLobbyKey)}# message sent to server whether its full,existent, or room
     print(message)
     m = json.dumps(message)
     m_sock.sendto(bytes(m, 'utf8'), m_addr)
-    if(_existingLobbyKey == _playerCount): #if the lobby is full after adding 1 to existing players then start the game.
+    if(m_existingLobbyKey == m_playerCount): #if the lobby is full after adding 1 to existing players then start the game.
+        m_randomPlayerOrder = MPRandomizePlayerTurns(m_playerCount)
         for c in clients: #tell clients in lobby game is ready to start
             if(m_data['lobbyKey'] == clients[c]['lobbyKey']):
-                message = {"header": 127, "startGame": int(1)}
+                message = {"header": 127, "startGame": int(1), "RandomOrder": m_randomPlayerOrder}
                 m = json.dumps(message)
                 m_sock.sendto(bytes(m,'utf8'), (c[0],c[1]))
 
@@ -136,6 +137,20 @@ def SendButtonToOtherPlayers(m_data, m_addr, m_sock): #send other client buttons
             message = {"header": 131, "buttonName": str(m_data['buttonName']), "isRowButton": int(m_data['isRowButton'])}
             m = json.dumps(message)
             m_sock.sendto(bytes(m,'utf8'), (c[0],c[1]))
+
+def MPRandomizePlayerTurns(m_playerCount):
+    m_randomPlayerOrder = []
+    if(m_playerCount == 4):
+        m_randomPlayerOrder = [1,2,3,4]
+    elif(m_playerCount == 3):
+        m_randomPlayerOrder = [1,2,3]
+    elif(m_playerCount == 2):
+        m_randomPlayerOrder = [1,2]
+    
+    random.shuffle(m_randomPlayerOrder)
+    print(m_randomPlayerOrder)
+    return m_randomPlayerOrder
+
 
 def main():
     PORT = 12345

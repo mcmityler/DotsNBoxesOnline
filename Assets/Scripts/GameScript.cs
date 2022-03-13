@@ -2,6 +2,8 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using System.Security.Cryptography;
+using System.Linq;
 
 public class GameScript : MonoBehaviour
 {
@@ -33,7 +35,8 @@ public class GameScript : MonoBehaviour
     private int[] _playerScores = new int[] { 0, 0, 0, 0 }; //player 1-4 scores (how many boxes have they collected)
     private Color32[] _localPlayerColors = new Color32[] { new Color32(0, 90, 188, 255), new Color32(137, 0, 0, 255), new Color32(1, 123, 0, 255), new Color32(209, 197, 0, 255) }; //Local players colors on the board.
     [SerializeField] private Animator _turnOrderAnimator; //turn order animator
-     private int[] _whosTurn = new int[] { 0, 0, 0, 0 }; //holds randomized turn order
+    private int _myPlayerNumberMP = 0; //turn number / what player you are in the lobby
+    private int[] _whosTurn = new int[] { 0, 0, 0, 0 }; //holds randomized turn order
     private int _turnRotation = 0; //placeholder for what turn you are currently on
     [SerializeField] private Text[] _playerTurnOrderText; //text boxes that display whos turn it is in the turn order 
     private GameBoard _gameBoard = new GameBoard(); //gameboard is every button, box and if the buttons have been clicked yet.
@@ -47,7 +50,7 @@ public class GameScript : MonoBehaviour
         LOGINREGISTER,
         LOBBYMENU,
         HOSTSCREEN,
-        STARTMULTIPLAYER
+        PLAYINGMULTIPLAYER
     };
 
     private GAMESTATE _currentGamestate = GAMESTATE.STARTMENU; //current gamestate of game
@@ -62,12 +65,12 @@ public class GameScript : MonoBehaviour
     void Update()
     {
         if (_currentGamestate == GAMESTATE.SETTINGS)//if you are on the board settings menu
-        { 
+        {
             _boardSize = (int)_boardSizeSlider.value; //make board the size that the slider is at.
             _boardSizeText.text = (_boardSizeSlider.value).ToString(); //make board size text on board settings panel update
         }
-        if (_currentGamestate == GAMESTATE.PLAYING)//if you are in the game play loop
-        { 
+        if (_currentGamestate == GAMESTATE.PLAYING || _currentGamestate == GAMESTATE.PLAYINGMULTIPLAYER)//if you are in the game play loop
+        {
             for (int i = 0; i < _numberOfPlayers; i++)
             {
                 _playerScoreTextboxes[i].text = _playerScores[i].ToString(); //display score while game is running
@@ -78,7 +81,8 @@ public class GameScript : MonoBehaviour
         {
             DisplayWinner(); //Display the winner 
         }
-        if(_currentGamestate == GAMESTATE.LOBBYMENU){//if you are on the multiplayer lobby menu screen
+        if (_currentGamestate == GAMESTATE.LOBBYMENU)
+        {//if you are on the multiplayer lobby menu screen
             _mpBoardSizeText.text = (_mpBoardSizeSlider.value).ToString(); //display slider size
         }
     }
@@ -86,7 +90,7 @@ public class GameScript : MonoBehaviour
     {
         _localGame = m_local; //local or multiplayer?
         if (_localGame)//if its a local game
-        { 
+        {
             _currentGamestate = GAMESTATE.SETTINGS; //change gamestate
             _socketManager.SetSOCKETGameState(_currentGamestate.ToString()); //Change gamestate in socketmanager
         }
@@ -103,11 +107,11 @@ public class GameScript : MonoBehaviour
     public void RestartButton() //restart button on game over screen.
     {
         foreach (GameObject _b in GameObject.FindGameObjectsWithTag("button"))//find all objects with the tag button to delete them from the scene
-        { 
+        {
             Destroy(_b);
         }
         foreach (GameObject _box in _gameBoard.boxes)///find all boxes and destroy them
-        { 
+        {
             Destroy(_box);
         }
         _gameBoard = new GameBoard(); //create new gameboard 
@@ -172,15 +176,15 @@ public class GameScript : MonoBehaviour
         }
     }
     public void GameStartButton()//start game button from board setting panel
-    { 
+    {
         _boardSettingsObj.SetActive(false); //hide board setting panel
         _boardSize = (int)_boardSizeSlider.value; //make board the size that the slider is at.
         CreateGame(); //create the game board size
         _currentGamestate = GAMESTATE.PLAYING;//Change gamestate to playing game
         _socketManager.SetSOCKETGameState(_currentGamestate.ToString()); //Change gamestate in socketmanager
-        RandomizeTurns(); //randomize who turn order.
         if (_localGame) //if its a local game
         {
+            LocalRandomTurn(); //randomize who turn order.
             for (int i = 0; i < _numberOfPlayers; i++)
             {
                 //Display local names if they entered them
@@ -261,97 +265,97 @@ public class GameScript : MonoBehaviour
         }
     }
 
-    private void RandomizeTurns() //randomize turn order
+    static int GetNextInt32(RNGCryptoServiceProvider rnd)
     {
-        for (int i = 0; i < _numberOfPlayers; i++) 
+        byte[] randomInt = new byte[200];
+        rnd.GetBytes(randomInt);
+        return System.Convert.ToInt32(randomInt[0]);
+    }
+
+    private void LocalRandomTurn() //randomize turn order
+    {
+        //Depending on number of players set array size
+        int[] m_RandomTurnOrder = { };
+        if (_numberOfPlayers == 4)
         {
-            //cycle through NumofPlayer, give them a random position
-            if (_whosTurn[i] == 0) //if turn is a 0 random it.
-            {
-                _whosTurn[i] = Random.Range(1, _numberOfPlayers + 1);
-            }
-            for (int x = 0; x < i; x++)
-            {
-                //if a turn has an identical number set to 0
-                if (_whosTurn[x] == _whosTurn[i] && x != i)
-                {
-                    _whosTurn[i] = 0;
-                }
-            }
+            m_RandomTurnOrder = new int[] { 1, 2, 3, 4 };
         }
-        //recursive if you still have a person without a turn.
+        else if (_numberOfPlayers == 3)
+        {
+            m_RandomTurnOrder = new int[] { 1, 2, 3 };
+        }
+        else if (_numberOfPlayers == 2)
+        {
+            m_RandomTurnOrder = new int[] { 1, 2 };
+        }
+        //Randomize the turn order using Fisher Yates
+        RNGCryptoServiceProvider rnd = new RNGCryptoServiceProvider();
+        m_RandomTurnOrder = m_RandomTurnOrder.OrderBy(x => GetNextInt32(rnd)).ToArray();
         for (int i = 0; i < _numberOfPlayers; i++)
         {
-            if (_whosTurn[i] == 0)
-            {
-                RandomizeTurns();
-            }
+            _whosTurn[i] = m_RandomTurnOrder[i]; //set turn order 
         }
     }
-    public void MPButtonClicked(string m_bName, int m_row){ 
-        //convert int from server to bool for client
-        bool m_tempBool = false;
-        if(m_row == 0){
-            m_tempBool = false;
-        }if(m_row == 1){
-            m_tempBool = true;
-        }
-        ButtonClicked(GameObject.Find(m_bName).GetComponent<Button>(),m_tempBool, false); //false to say you didnt press it you got it from the server. 
-    }
+
 
     public void ButtonClicked(Button m_b, bool m_row, bool _youPressed) //function is called when row or column button is pressed, passes button pressed & bool for whether it is a row or col button.
     {
-        bool m_alreadyClicked = false; //temp holds if it has been pressed in the past
-        if (m_row && _gameBoard.rowClicked[m_b.name] != true)//check it it is a ROW button && if it HASNT been pressed.
-        {  
-            _gameBoard.rowClicked[m_b.name] = true;
-        }
-        else if (!m_row && _gameBoard.colClicked[m_b.name] != true)//check it it is a COL button && if  it HASNT been pressed.
+        if (_localGame || (_whosTurn[_turnRotation] == _myPlayerNumberMP && !_localGame) || (!_localGame && !_youPressed)) //only click button if its local, your turn, or you are recieving a button
         {
-            _gameBoard.colClicked[m_b.name] = true;
-        }
-        else //tells script that this button has already been pressed in the past
-        {
-            m_alreadyClicked = true;
-        }
-        if (!m_alreadyClicked)//if button hasnt been clicked then change the buttons colour and check if the box needs to be filled in.
-        { 
-
-            if (_whosTurn[_turnRotation] == 1)
-            {//FIRST PLAYER
-                m_b.GetComponent<Image>().color = Color.blue;
-            }
-            else if (_whosTurn[_turnRotation] == 2)
-            {//SECOND PLAYER
-                m_b.GetComponent<Image>().color = Color.red;
-            }
-            else if (_whosTurn[_turnRotation] == 3)
-            {//THIRD PLAYER
-                m_b.GetComponent<Image>().color = Color.green;
-            }
-            else if (_whosTurn[_turnRotation] == 4)
-            {//FOURTH PLAYER
-                m_b.GetComponent<Image>().color = Color.yellow;
-            }
-            // m_b.GetComponent<Image>().color = _localPlayerColors[_whosTurn[_turnRotation]-1];
-            ColorBlock m_tempColor = m_b.GetComponent<Button>().colors; //make temporary color block to change alpha of button to 100%
-            m_tempColor.normalColor = m_b.GetComponent<Image>().color; //set normal color to what color button should be.
-            m_b.GetComponent<Button>().colors = m_tempColor; //set buttons color block to temp color block
-
-            CheckBoxes(); //check if box needs to be filled in. (check if it is surrounded by 4 pressed buttons)
-
-            if(!_localGame && _youPressed) //if multi AND you pressed button send to other players
+            bool m_alreadyClicked = false; //temp holds if it has been pressed in the past
+            if (m_row && _gameBoard.rowClicked[m_b.name] != true)//check it it is a ROW button && if it HASNT been pressed.
             {
-                //Convert bool to int to send button to server
-                int m_tempint = 0;
-                if(m_row){
-                    m_tempint = 1;
+                _gameBoard.rowClicked[m_b.name] = true;
+            }
+            else if (!m_row && _gameBoard.colClicked[m_b.name] != true)//check it it is a COL button && if  it HASNT been pressed.
+            {
+                _gameBoard.colClicked[m_b.name] = true;
+            }
+            else //tells script that this button has already been pressed in the past
+            {
+                m_alreadyClicked = true;
+            }
+            if (!m_alreadyClicked)//if button hasnt been clicked then change the buttons colour and check if the box needs to be filled in.
+            {
+
+                if (_whosTurn[_turnRotation] == 1)
+                {//FIRST PLAYER
+                    m_b.GetComponent<Image>().color = Color.blue;
                 }
-                if(!m_row){
-                    m_tempint = 0;
+                else if (_whosTurn[_turnRotation] == 2)
+                {//SECOND PLAYER
+                    m_b.GetComponent<Image>().color = Color.red;
                 }
-                //send button to server
-                _socketManager.SendButtonMessage(m_b.name, m_tempint);
+                else if (_whosTurn[_turnRotation] == 3)
+                {//THIRD PLAYER
+                    m_b.GetComponent<Image>().color = Color.green;
+                }
+                else if (_whosTurn[_turnRotation] == 4)
+                {//FOURTH PLAYER
+                    m_b.GetComponent<Image>().color = Color.yellow;
+                }
+                // m_b.GetComponent<Image>().color = _localPlayerColors[_whosTurn[_turnRotation]-1];
+                ColorBlock m_tempColor = m_b.GetComponent<Button>().colors; //make temporary color block to change alpha of button to 100%
+                m_tempColor.normalColor = m_b.GetComponent<Image>().color; //set normal color to what color button should be.
+                m_b.GetComponent<Button>().colors = m_tempColor; //set buttons color block to temp color block
+
+                CheckBoxes(); //check if box needs to be filled in. (check if it is surrounded by 4 pressed buttons)
+
+                if (!_localGame && _youPressed) //if multi AND you pressed button send to other players
+                {
+                    //Convert bool to int to send button to server
+                    int m_tempint = 0;
+                    if (m_row)
+                    {
+                        m_tempint = 1;
+                    }
+                    if (!m_row)
+                    {
+                        m_tempint = 0;
+                    }
+                    //send button to server
+                    _socketManager.SendButtonMessage(m_b.name, m_tempint);
+                }
             }
         }
     }
@@ -363,9 +367,9 @@ public class GameScript : MonoBehaviour
         bool m_pointGained = false; //holds whether you scored a point or not, basically to change turns, if point gained dont change turn.
 
         foreach (GameObject box in _gameBoard.boxes)//go through list of boxes in game
-        { 
+        {
             if (box.tag == "unchecked")//make sure box hasnt been claimed already
-            { 
+            {
                 List<Button> temp = box.GetComponent<BoxScript>().buttonList; //temp list of buttons surrounding box
                 int counter = 0; //counter to distinguish buttons between row and column
                 foreach (Button but in temp)
@@ -436,11 +440,11 @@ public class GameScript : MonoBehaviour
             _currentGamestate = GAMESTATE.GAMEOVER;
             _socketManager.SetSOCKETGameState(_currentGamestate.ToString()); //Change gamestate in socketmanager
             for (int i = 0; i < _numberOfPlayers; i++)//Update score one last time!!
-            { 
+            {
                 _playerScoreTextboxes[i].text = _playerScores[i].ToString();
             }
         }
-        else 
+        else
         {
             m_boxesLeftCheck = false; //reset for next check
         }
@@ -527,26 +531,56 @@ public class GameScript : MonoBehaviour
 
     }
 
-   
-    public int GetPlayerSize(){ //get player size froms script while its private
+
+    public int GetPlayerSize()
+    { //get player size froms script while its private
         return _numberOfPlayers;
     }
-    public int GetBoardSize(){ //get size of board from script while its private
+    public int GetBoardSize()
+    { //get size of board from script while its private
         return _boardSize;
     }
-    public void SetSizeofBoard(int m_sizeofboard){ //set size of board from multiplayer
+    public void SetSizeofBoard(int m_sizeofboard)
+    { //set size of board from multiplayer
         _boardSize = m_sizeofboard;
-        if(m_sizeofboard == -1){
-             _boardSize = (int)_mpBoardSizeSlider.value; //make board the size that the slider is at.
+        if (m_sizeofboard == -1)
+        {
+            _boardSize = (int)_mpBoardSizeSlider.value; //make board the size that the slider is at.
         }
     }
-     public void StartMultiplayerGameBoard(){  //everything needed to start a multiplayer board
-        
+    public void SetMyPlayerNumber(int m_myPlayerNumber) //get my turn number from the server (aka what player you are in the lobby)
+    {
+        _myPlayerNumberMP = m_myPlayerNumber;
+    }
+    public void MPSetTurnOrder(int[] m_turnorder) //Get the turn order from the server and set it
+    {
+       for (int i = 0; i < _numberOfPlayers; i++)
+       {
+           _whosTurn[i] = m_turnorder[i];
+       }
+    }
+    public void StartMultiplayerGameBoard()//everything needed to start a multiplayer board
+    {  
+
         _boardSettingsObj.SetActive(false); //hide board settings to see board
         CreateGame(); //create board based off board size
-        
+
     }
-    
+    public void MPButtonClicked(string m_bName, int m_row) //What to do when you get a button click from another player
+    {
+        //convert int from server to bool for client
+        bool m_tempBool = false;
+        if (m_row == 0)
+        {
+            m_tempBool = false;
+        }
+        if (m_row == 1)
+        {
+            m_tempBool = true;
+        }
+        ButtonClicked(GameObject.Find(m_bName).GetComponent<Button>(), m_tempBool, false); //false to say you didnt press it you got it from the server. 
+    }
+
 
     // -------------------------CLASSES ---------------------------------------
     [System.Serializable]
