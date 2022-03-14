@@ -23,6 +23,7 @@ public class GameScript : MonoBehaviour
     // -------------------Gameover screen variables--------------------------
     [SerializeField] private GameObject _gameoverObj; //gameover obj displays score screen and restart button
     [SerializeField] private Text _winnerText; //text that displays who won the game or if it was a tie
+    [SerializeField] private GameObject _LCRestart, _MPRestart; //gameobjects that hold restart buttons for multiplayer or localplay
     [SerializeField] private Text[] _playerScoreTextboxes; //player 1 - 4 score text boxes
     [SerializeField] private Text[] _endgameScoreTextboxes; //endgame 1 - 4 place score text boxes
     [SerializeField] private Animator _endgameScoreAnimator; //animator on engame score screen (changes size of scorebox depending on how many players)
@@ -50,6 +51,7 @@ public class GameScript : MonoBehaviour
         LOGINREGISTER,
         LOBBYMENU,
         HOSTSCREEN,
+        JOINSCREEN,
         PLAYINGMULTIPLAYER
     };
 
@@ -458,6 +460,13 @@ public class GameScript : MonoBehaviour
     }
     private void DisplayWinner() //Display Winner / Score screen scores.
     {
+        _LCRestart.SetActive(false);
+        _MPRestart.SetActive(false);
+        if(_localGame){
+            _LCRestart.SetActive(true);
+        }else if(!_localGame){
+            _MPRestart.SetActive(true);
+        }
         _endgameScoreAnimator.SetInteger("NumberOfPlayers", _numberOfPlayers); //change size of score screen depending on player number
         _gameoverObj.SetActive(true); //show the endgame score screen and the restart btn
         int[] m_playerPlace = new int[] { 0, 0, 0, 0 }; //check what place each player finished in.

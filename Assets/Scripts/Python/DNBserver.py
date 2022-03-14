@@ -48,7 +48,7 @@ def handle_messages(sock: socket.socket):
             if(data['header'] == SocketMessageType.HOSTDNBGAME):
                 CreateNewLobby(addr, sock)
                 clients[addr]['SizeofBoard'] = data['SizeofBoard']
-                clients[addr]['playerLimit'] = data['playerLimit']
+                clients[addr]['playerLimit'] = data['playerLimit'] #change size of the lobby based off what the host wants.
                 print(clients[addr]['lobbyKey'])
             if(data['header'] == SocketMessageType.JOINDNBGAME):
                 CheckJoin(data, addr, sock)

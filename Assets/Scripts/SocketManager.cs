@@ -27,6 +27,7 @@ public class SocketManager : MonoBehaviour
     private bool _recieveButton = false;//tell client it recieved a button (in update message do something)
     private int _tempIsRowButton = 0;//temp is row bool recieved
     private string _tempButtonName;//save the button name recieved
+    private bool _joinedGame = false;
     private enum GAMESTATE //Enum for game state / what point the game is currently at.
     { 
         STARTMENU,
@@ -37,6 +38,7 @@ public class SocketManager : MonoBehaviour
         LOGINREGISTER,
         LOBBYMENU,
         HOSTSCREEN,
+        JOINSCREEN,
         PLAYINGMULTIPLAYER
     };
     private GAMESTATE _currentGamestate = GAMESTATE.STARTMENU; //what is the current gamestate
@@ -66,11 +68,15 @@ public class SocketManager : MonoBehaviour
 
     public void Update()
     {
-        if(_currentGamestate == GAMESTATE.HOSTSCREEN){ //if you are in host/keylobby screen
+        if(_currentGamestate == GAMESTATE.HOSTSCREEN || _currentGamestate == GAMESTATE.JOINSCREEN){ //if you are in host/keylobby screen
             _keyHostText.text = "Lobby Key: " + _lobbyString;
         }
         if(_currentGamestate == GAMESTATE.LOBBYMENU){ //if you are in the lobby menu
             _errorLobbyKeyText.text = _errorKeyMessage;
+        }
+        if(_joinedGame){
+            _joinedGame = false;
+            _menuScript.LobbyKeyScreenToggle();
         }
         if(_multiplayerLobbyReady){ //Enough players in lobby, get it ready to play.
             _multiplayerLobbyReady = false;
@@ -180,6 +186,12 @@ public class SocketManager : MonoBehaviour
                      Debug.Log("does lobby exist (y): " + checkLobbyPayload.lobbyExists);
                     _gameScript.SetSizeofBoard(checkLobbyPayload.SizeofBoard); //set board size based off what the hosts board size is.
                     _gameScript.SetMyPlayerNumber(checkLobbyPayload.YourPlayerNumber); //set what player number I am in the lobby
+                    if(_gameScript.GetPlayerSize() != checkLobbyPayload.YourPlayerNumber){ //definitely have a problem with this when you are the last player
+                        _currentGamestate = GAMESTATE.JOINSCREEN;
+                        _gameScript.SetGSGameState(_currentGamestate.ToString());
+                        _joinedGame = true;
+                    }
+                    
                 }
                     
                 else if (checkLobbyPayload.lobbyExists == 2){  //Message from server telling it is full (2)
@@ -195,7 +207,7 @@ public class SocketManager : MonoBehaviour
                 if(startGamePayload.startGame == 1){ //start game
                     Debug.Log("StartGame!");
                     _multiplayerLobbyReady = true;
-                    if(_currentGamestate == GAMESTATE.HOSTSCREEN){
+                    if(_currentGamestate == GAMESTATE.HOSTSCREEN || _currentGamestate == GAMESTATE.JOINSCREEN){ 
                         _menuScript.LobbyKeyScreenToggle();
                     }
                     _currentGamestate = GAMESTATE.PLAYINGMULTIPLAYER;
@@ -228,6 +240,12 @@ public class SocketManager : MonoBehaviour
         _lobbyString = "null"; //make your lobby Key back to null or nonexistent
         SendConnectMessage(); // change your lobby Key on the server / true means send it to server not check if its real.
         _multiplayerGameStarted = false; //make sure you exit game started.
+    }
+    public void QuitToLobbyMenuButton() //called by back to menu when playing a multiplayergame at the end.
+    {
+        //set lobby to null
+
+        //tellother players I quit / to go back to lobby
     }
     public void HostGameButton(){
         _gameScript.SetSizeofBoard(-1); //tell client board size from slider, so that when you host it sends the server the right size
