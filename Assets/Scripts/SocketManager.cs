@@ -27,7 +27,7 @@ public class SocketManager : MonoBehaviour
     private bool _recieveButton = false;//tell client it recieved a button (in update message do something)
     private int _tempIsRowButton = 0;//temp is row bool recieved
     private string _tempButtonName;//save the button name recieved
-    private bool _joinedGame = false;
+    private bool _joinedGame, _playerQuit = false;
     private enum GAMESTATE //Enum for game state / what point the game is currently at.
     { 
         STARTMENU,
@@ -87,6 +87,11 @@ public class SocketManager : MonoBehaviour
         if(_recieveButton){ //what to do when you get a button.
             _recieveButton = false;
             _gameScript.MPButtonClicked(_tempButtonName, _tempIsRowButton);
+
+        }
+        if(_playerQuit){ //what to do if a player quits your lobby at the end of a game.
+            _playerQuit = false;
+            QuittoLobbyMenuFunc();
 
         }
     }
@@ -224,6 +229,9 @@ public class SocketManager : MonoBehaviour
                 _tempButtonName = buttonPayload.buttonName; //save the button name recieved
                 _tempIsRowButton = buttonPayload.isRowButton; //save the temp is row bool recieved
                 break;
+            case socketMessagetype.PLAYERQUIT:
+                _playerQuit = true;
+                break;
            /* case socketMessagetype.DISCONNECT:
                 var disconnectPayload = JsonUtility.FromJson<DisconnectPayload>(data); //convert data from base class to result class
                 gmScript.PlayerDisconnected(disconnectPayload.droppedID);
@@ -243,9 +251,21 @@ public class SocketManager : MonoBehaviour
     }
     public void QuitToLobbyMenuButton() //called by back to menu when playing a multiplayergame at the end.
     {
-        //set lobby to null
-
+        QuittoLobbyMenuFunc();
         //tellother players I quit / to go back to lobby
+        var payload = new BaseSocketMessage{ //payload is what you are sending to server.
+                header = socketMessagetype.PLAYERQUIT
+        };
+        var data = Encoding.ASCII.GetBytes(JsonUtility.ToJson(payload)); //convert payload to transmittable data.(json file)
+        udp.Send(data, data.Length); //send data to server you connected to in start func. 
+    }
+    private void QuittoLobbyMenuFunc(){
+        _lobbyString = "null"; //set lobby to null
+        _currentGamestate = GAMESTATE.LOBBYMENU; //go back to lobbymenu gamestate
+        _gameScript.SetGSGameState(_currentGamestate.ToString());
+        //go back to lobby menu screen
+        _menuScript.StopMPGame(); //hide menus so you can see game board
+        _gameScript.StopMultiplayerGameBoard(); //display game board and hide board settings
     }
     public void HostGameButton(){
         _gameScript.SetSizeofBoard(-1); //tell client board size from slider, so that when you host it sends the server the right size
@@ -316,7 +336,8 @@ public enum socketMessagetype{
     STARTGAME = 127, //SENT FROM SERVER TO CLIENT  when the lobby is full on players
     SENDLOBBYKEY = 128, //SENT FROM SERVER TO CLIENT to tell what the lobbykey is (so there isnt any duplicates)
     SENDBUTTON = 130, //SENT FROM CLIENT TO SERVER tells server to send other player button pressed
-    GETBUTTON =131 //SENT FROM SERVER TO CLIENT tells client what the other player pressed
+    GETBUTTON = 131, //SENT FROM SERVER TO CLIENT tells client what the other player pressed
+    PLAYERQUIT = 132 //SENT FROM CLINET TO SERVER && SERVER TO CLIENT tells server to tell all other clients to DC
 
 }
 
@@ -326,15 +347,15 @@ public enum socketMessagetype{
 [System.Serializable] class LobbyKeyClientMessage: BaseSocketMessage
 {
    public string lobbyKey; 
-   public int playerLimit = 0;
-   public int SizeofBoard = 4;
+   public int playerLimit = 0; //send lobby limit to server
+   public int SizeofBoard = 4; //send size to server
 }
 
 [System.Serializable] class LobbyCheckClientMessage: BaseSocketMessage
 {
     public int lobbyExists; 
-    public int SizeofBoard;
-    public int YourPlayerNumber;
+    public int SizeofBoard; //get size from server
+    public int YourPlayerNumber; //get number froms erver
 }
 [System.Serializable] class StartGameClientMessage: BaseSocketMessage
 {

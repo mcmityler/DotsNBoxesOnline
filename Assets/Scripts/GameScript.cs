@@ -122,11 +122,12 @@ public class GameScript : MonoBehaviour
             _whosTurn[i] = 0; //reset turn order so you can re-randomize them.
             _playerScores[i] = 0; //set scores to 0
             _playerScoreTextboxes[i].text = _playerScores[i].ToString(); //display scores in text box
-            if (_localGame) // if local game.
-            {
-                _playerTurnOrderText[i].text = _localPlayerNames[i]; //reset names of text boxes in the turn order so when it resets its back to players 1-4 in correct order
-                _playerTurnOrderText[i].color = _localPlayerColors[i]; //reset color of turn order text boxes ^^
+            if(!_localGame){
+                _localPlayerNames[i] = "Player " + (i+1).ToString();
             }
+            _playerTurnOrderText[i].text = _localPlayerNames[i]; //reset names of text boxes in the turn order so when it resets its back to players 1-4 in correct order
+            _playerTurnOrderText[i].color = _localPlayerColors[i]; //reset color of turn order text boxes ^^
+            
         }
         _gameoverObj.SetActive(false); //make gameover panel invisible.
         _turnRotation = 0; // go back to the start of turn order
@@ -580,6 +581,14 @@ public class GameScript : MonoBehaviour
 
         _boardSettingsObj.SetActive(false); //hide board settings to see board
         CreateGame(); //create board based off board size
+
+    }
+    public void StopMultiplayerGameBoard()//everything needed to start a multiplayer board
+    {  
+
+        _boardSettingsObj.SetActive(true); //show board settings to see board
+        //Destroy Game board.
+        RestartButton();
 
     }
     public void MPButtonClicked(string m_bName, int m_row) //What to do when you get a button click from another player

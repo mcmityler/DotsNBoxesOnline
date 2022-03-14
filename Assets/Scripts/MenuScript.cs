@@ -78,5 +78,10 @@ public class MenuScript : MonoBehaviour
         _lobbyMenuSceenScreenObj.SetActive(false);
         _loginScreenObj.SetActive(false);
     }
+    public void StopMPGame(){
+        _mainMenuObj.SetActive(true);
+        _lobbyMenuSceenScreenObj.SetActive(true);
+        _loginScreenObj.SetActive(true);
+    }
 
 }

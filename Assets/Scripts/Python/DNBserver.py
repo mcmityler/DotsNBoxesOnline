@@ -25,6 +25,7 @@ class SocketMessageType(IntEnum):
     SENDLOBBYKEY = 128 #from the server to client to tell what the lobbykey is (so there isnt any duplicates)
     SENDBUTTON = 130 #SENT FROM CLIENT TO SERVER tells server to send other player button pressed
     GETBUTTON =131 #SENT FROM SERVER TO CLIENT tells client what the other player pressed
+    PLAYERQUIT = 132 #SENT FROM CLINET TO SERVER && SERVER TO CLIENT tells server to tell all other clients to DC
 
 
 # listen for messages from server..
@@ -56,6 +57,16 @@ def handle_messages(sock: socket.socket):
                 print(clients[addr]['lobbyKey'])
             if(data['header'] == SocketMessageType.SENDBUTTON):
                 SendButtonToOtherPlayers(data,addr,sock)#send button to other clients
+            if(data['header'] == SocketMessageType.PLAYERQUIT):
+                for c in clients:
+                    if(clients[addr]['lobbyKey'] == clients[c]['lobbyKey'] and addr != c): # send dc from server message to clients that are in lobby with someone who quit after game is over
+                        clients[c]['lobbyKey'] = "null"
+                        message = {"header": 132}
+                        m = json.dumps(message)
+                        sock.sendto(bytes(m, 'utf8'), c)
+
+                clients[addr]['lobbyKey'] = "null"
+                print(clients[addr]['lobbyKey'])
 
         else:  # if you arent part of the contact list then do the connection
             # if they are connecting..
