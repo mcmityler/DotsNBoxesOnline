@@ -18,7 +18,7 @@ public class GameScript : MonoBehaviour
     [SerializeField] private GameObject _boardSettingsObj, _localPlayerNamesObj; //Settings panel for picking board size and player amount //local player name inputs obj (toggles visibility)
     [SerializeField] private Slider _boardSizeSlider, _mpBoardSizeSlider; //slider on board setting panel to choose size of board // slider on multiplayer menu
     [SerializeField] private Text _boardSizeText, _mpBoardSizeText;//Text that displays slider count// text for slider on multiplayer menu
-    [SerializeField] private Text _numberOfPlayerText; //text that displays how many people are playing on settings screen
+    [SerializeField] private Text _numberOfPlayerText, _mpLobbySizeText; //text that displays how many people are playing on settings screen // multiplayer lobby menu
 
     // -------------------Gameover screen variables--------------------------
     [SerializeField] private GameObject _gameoverObj; //gameover obj displays score screen and restart button
@@ -154,12 +154,18 @@ public class GameScript : MonoBehaviour
         if (_numberOfPlayers < 4)//add if num is less then max player
         {
             _numberOfPlayers++;
-            _numberOfPlayerText.text = _numberOfPlayers.ToString(); //display how many are allowed in lobby
+            _numberOfPlayerText.text = _numberOfPlayers.ToString(); //display how many are allowed in local lobby
+            _mpLobbySizeText.text = _numberOfPlayers.ToString(); //display how many are allowed in MP lobby
         }
-        if (_localGame)
+        if (_localGame) //if local
         {
             _localNameInputAnimator.SetInteger("PlayerAmount", _numberOfPlayers); //Animate how many player name inputs are visable
             _turnOrderAnimator.SetInteger("PlayerAmount", _numberOfPlayers);//Animate how many players are shown in turn order
+        }
+        if(!_localGame) //if multiplayer
+        {
+            _turnOrderAnimator.SetInteger("PlayerAmount", _numberOfPlayers);//Animate how many players are shown in turn order
+
         }
     }
     public void MinusPlayerButton()
@@ -167,7 +173,8 @@ public class GameScript : MonoBehaviour
         if (_numberOfPlayers > 2) //subtract if more then min player
         {
             _numberOfPlayers--;
-            _numberOfPlayerText.text = _numberOfPlayers.ToString(); //display how many are allowed in lobby
+            _numberOfPlayerText.text = _numberOfPlayers.ToString(); //display how many are allowed in local lobby
+            _mpLobbySizeText.text = _numberOfPlayers.ToString(); //display how many are allowed in MP lobby
         }
         if (_localGame)
         {

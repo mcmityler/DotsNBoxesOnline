@@ -48,6 +48,7 @@ def handle_messages(sock: socket.socket):
             if(data['header'] == SocketMessageType.HOSTDNBGAME):
                 CreateNewLobby(addr, sock)
                 clients[addr]['SizeofBoard'] = data['SizeofBoard']
+                clients[addr]['playerLimit'] = data['playerLimit']
                 print(clients[addr]['lobbyKey'])
             if(data['header'] == SocketMessageType.JOINDNBGAME):
                 CheckJoin(data, addr, sock)
@@ -104,6 +105,7 @@ def CheckJoin(m_data, m_addr, m_sock):
             # count how many clients have that lobbyKey
             m_existingLobbyKey += 1
             m_boardSize = clients[c]['SizeofBoard']
+            m_playerCount = clients[c]['playerLimit']
             
 
     if(m_existingLobbyKey == 0): # if lobby doesnt exist tell client
