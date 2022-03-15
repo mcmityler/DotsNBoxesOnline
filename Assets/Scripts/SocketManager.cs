@@ -27,7 +27,9 @@ public class SocketManager : MonoBehaviour
     private bool _recieveButton = false;//tell client it recieved a button (in update message do something)
     private int _tempIsRowButton = 0;//temp is row bool recieved
     private string _tempButtonName;//save the button name recieved
-    private bool _joinedGame, _playerQuit = false;
+    private bool _joinedGame, _playerQuitAfterGame, _everyoneReplay = false; //bools to hold, that you joined a game (send to join screen).// player quit game after its been played once(send back to main menu) //everyone clicked restart game for updateloop
+    [SerializeField] private Text playerQuitText; //text to tell puser a player quit and thats why they dced
+    private int[] _tempTurnOrder;
     private enum GAMESTATE //Enum for game state / what point the game is currently at.
     { 
         STARTMENU,
@@ -39,7 +41,8 @@ public class SocketManager : MonoBehaviour
         LOBBYMENU,
         HOSTSCREEN,
         JOINSCREEN,
-        PLAYINGMULTIPLAYER
+        PLAYINGMULTIPLAYER,
+        WAITINGRESTART
     };
     private GAMESTATE _currentGamestate = GAMESTATE.STARTMENU; //what is the current gamestate
     private string _lobbyString = "null"; //current lobby string
@@ -89,10 +92,20 @@ public class SocketManager : MonoBehaviour
             _gameScript.MPButtonClicked(_tempButtonName, _tempIsRowButton);
 
         }
-        if(_playerQuit){ //what to do if a player quits your lobby at the end of a game.
-            _playerQuit = false;
+        if(_playerQuitAfterGame){ //what to do if a player quits your lobby at the end of a game.
+            _playerQuitAfterGame = false;
+            playerQuitText.gameObject.SetActive(true);
             QuittoLobbyMenuFunc();
 
+        }
+        if(_everyoneReplay){
+            _everyoneReplay = false;
+            _gameScript.RestartButton(false);
+            _currentGamestate = GAMESTATE.PLAYINGMULTIPLAYER;
+            _gameScript.SetGSGameState(_currentGamestate.ToString());
+            _gameScript.MPSetTurnOrder(_tempTurnOrder); //set random turn order
+            _menuScript.StartMPGame(); //hide menus so you can see game board
+            _gameScript.StartMultiplayerGameBoard(); //display game board and hide board settings
         }
     }
     public void LoginButton() //login button on Lobby menu screen
@@ -120,7 +133,7 @@ public class SocketManager : MonoBehaviour
             _menuScript.LobbyMenuSceenButton();
         }
         
-        
+        playerQuitText.gameObject.SetActive(false); //hide player quit text
 
 
     }
@@ -230,7 +243,12 @@ public class SocketManager : MonoBehaviour
                 _tempIsRowButton = buttonPayload.isRowButton; //save the temp is row bool recieved
                 break;
             case socketMessagetype.PLAYERQUIT:
-                _playerQuit = true;
+                _playerQuitAfterGame = true;
+                break;
+             case socketMessagetype.REPLAY:
+                RestartServerMessage restartGamePayload = JsonUtility.FromJson<RestartServerMessage>(data);
+                _tempTurnOrder = restartGamePayload.RandomOrder;
+                _everyoneReplay = true;
                 break;
            /* case socketMessagetype.DISCONNECT:
                 var disconnectPayload = JsonUtility.FromJson<DisconnectPayload>(data); //convert data from base class to result class
@@ -248,6 +266,7 @@ public class SocketManager : MonoBehaviour
         _lobbyString = "null"; //make your lobby Key back to null or nonexistent
         SendConnectMessage(); // change your lobby Key on the server / true means send it to server not check if its real.
         _multiplayerGameStarted = false; //make sure you exit game started.
+        playerQuitText.gameObject.SetActive(false); //hide player quit text
     }
     public void QuitToLobbyMenuButton() //called by back to menu when playing a multiplayergame at the end.
     {
@@ -274,6 +293,7 @@ public class SocketManager : MonoBehaviour
         _currentGamestate = GAMESTATE.HOSTSCREEN;
         _gameScript.SetGSGameState(_currentGamestate.ToString());
         _gameScript.SetMyPlayerNumber(1); //set player number inlobby (since you are hosing you are first)
+        playerQuitText.gameObject.SetActive(false); //hide player quit text
     }
     
     public void JoinGameButton(){
@@ -283,6 +303,19 @@ public class SocketManager : MonoBehaviour
         }else{
             _errorKeyMessage = "Lobby Key " + _lobbyString + " Non-Existent";
         }
+        playerQuitText.gameObject.SetActive(false); //hide player quit text
+    }
+
+    public void RestartMPButton(){
+        _currentGamestate = GAMESTATE.WAITINGRESTART;
+        _gameScript.SetGSGameState(_currentGamestate.ToString());
+        _gameScript.HideScoreBoard();
+        var payload = new RestartClientMessage{ //payload is what you are sending to server.
+            header = socketMessagetype.REPLAY, //header tells server what type of message it is.
+            replay = 1 //tells server yes (1 = true since python doesnt have booleans)
+        };
+        var data = Encoding.ASCII.GetBytes(JsonUtility.ToJson(payload)); //convert payload to transmittable data.(json file)
+        udp.Send(data, data.Length); //send data to server you connected to in start func. 
     }
     void SendConnectMessage(){ //tell server you have connected.. send connect message
         var payload = new LobbyKeyClientMessage{ //payload is what you are sending to server.
@@ -337,7 +370,8 @@ public enum socketMessagetype{
     SENDLOBBYKEY = 128, //SENT FROM SERVER TO CLIENT to tell what the lobbykey is (so there isnt any duplicates)
     SENDBUTTON = 130, //SENT FROM CLIENT TO SERVER tells server to send other player button pressed
     GETBUTTON = 131, //SENT FROM SERVER TO CLIENT tells client what the other player pressed
-    PLAYERQUIT = 132 //SENT FROM CLINET TO SERVER && SERVER TO CLIENT tells server to tell all other clients to DC
+    PLAYERQUIT = 132, //SENT FROM CLIENT TO SERVER && SERVER TO CLIENT tells server to tell all other clients to DC
+    REPLAY = 133 //SENT FROM CLIENT TO SERVER to tell sever you want to play the game again with the same players.. Then back from server to client to tell it everyone said yes (if everyone wants to play again)
 
 }
 
@@ -362,11 +396,19 @@ public enum socketMessagetype{
     public int startGame; 
     public int[] RandomOrder;
 }
-[System.Serializable] class DisconnectPayload: BaseSocketMessage
+[System.Serializable] class RestartClientMessage: BaseSocketMessage
+{
+   public int replay;
+}
+[System.Serializable] class RestartServerMessage: BaseSocketMessage
+{
+   public int[] RandomOrder;
+}
+
+[System.Serializable] class DisconnectServerMessage: BaseSocketMessage
 {
    public string droppedKey;
 }
-
 
 [System.Serializable] class HeartBeatMessage: BaseSocketMessage
 {

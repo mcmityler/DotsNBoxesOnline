@@ -52,7 +52,8 @@ public class GameScript : MonoBehaviour
         LOBBYMENU,
         HOSTSCREEN,
         JOINSCREEN,
-        PLAYINGMULTIPLAYER
+        PLAYINGMULTIPLAYER,
+        WAITINGRESTART
     };
 
     private GAMESTATE _currentGamestate = GAMESTATE.STARTMENU; //current gamestate of game
@@ -106,7 +107,7 @@ public class GameScript : MonoBehaviour
     {
         _currentGamestate = (GAMESTATE)System.Enum.Parse(typeof(GAMESTATE), m_state, true);//change string into a enum. (true means case doesnt matter)
     }
-    public void RestartButton() //restart button on game over screen.
+    public void RestartButton(bool m_resetNames) //restart button on game over screen.
     {
         foreach (GameObject _b in GameObject.FindGameObjectsWithTag("button"))//find all objects with the tag button to delete them from the scene
         {
@@ -122,7 +123,7 @@ public class GameScript : MonoBehaviour
             _whosTurn[i] = 0; //reset turn order so you can re-randomize them.
             _playerScores[i] = 0; //set scores to 0
             _playerScoreTextboxes[i].text = _playerScores[i].ToString(); //display scores in text box
-            if(!_localGame){
+            if(!_localGame && m_resetNames){
                 _localPlayerNames[i] = "Player " + (i+1).ToString();
             }
             _playerTurnOrderText[i].text = _localPlayerNames[i]; //reset names of text boxes in the turn order so when it resets its back to players 1-4 in correct order
@@ -588,7 +589,7 @@ public class GameScript : MonoBehaviour
 
         _boardSettingsObj.SetActive(true); //show board settings to see board
         //Destroy Game board.
-        RestartButton();
+        RestartButton(true);
 
     }
     public void MPButtonClicked(string m_bName, int m_row) //What to do when you get a button click from another player
@@ -604,6 +605,9 @@ public class GameScript : MonoBehaviour
             m_tempBool = true;
         }
         ButtonClicked(GameObject.Find(m_bName).GetComponent<Button>(), m_tempBool, false); //false to say you didnt press it you got it from the server. 
+    }
+    public void HideScoreBoard(){
+        _gameoverObj.SetActive(false);
     }
 
 

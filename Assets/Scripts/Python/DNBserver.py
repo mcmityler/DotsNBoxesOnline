@@ -25,7 +25,9 @@ class SocketMessageType(IntEnum):
     SENDLOBBYKEY = 128 #from the server to client to tell what the lobbykey is (so there isnt any duplicates)
     SENDBUTTON = 130 #SENT FROM CLIENT TO SERVER tells server to send other player button pressed
     GETBUTTON =131 #SENT FROM SERVER TO CLIENT tells client what the other player pressed
-    PLAYERQUIT = 132 #SENT FROM CLINET TO SERVER && SERVER TO CLIENT tells server to tell all other clients to DC
+    PLAYERQUIT = 132 #SENT FROM CLIENT TO SERVER && SERVER TO CLIENT tells server to tell all other clients to DC
+    REPLAY = 133 #SENT FROM CLIENT TO SERVER to tell sever you want to play the game again with the same players.. Then back from server to client to tell it everyone said yes (if everyone wants to play again)
+
 
 
 # listen for messages from server..
@@ -61,12 +63,31 @@ def handle_messages(sock: socket.socket):
                 for c in clients:
                     if(clients[addr]['lobbyKey'] == clients[c]['lobbyKey'] and addr != c): # send dc from server message to clients that are in lobby with someone who quit after game is over
                         clients[c]['lobbyKey'] = "null"
+                        clients[c]['replay'] = 0 #reset wanting to play again incase someone clicked replay
                         message = {"header": 132}
                         m = json.dumps(message)
                         sock.sendto(bytes(m, 'utf8'), c)
 
                 clients[addr]['lobbyKey'] = "null"
                 print(clients[addr]['lobbyKey'])
+            if(data['header'] == SocketMessageType.REPLAY):
+                #what to do when you want to play again
+                clients[addr]['replay'] = 1
+                everyoneReady = 1
+                #check if everyone in lobby wants to play again
+                for c in clients:
+                    if(clients[addr]['lobbyKey'] == clients[c]['lobbyKey'] and clients[c]['replay'] == 0):
+                        everyoneReady = 0
+                if(everyoneReady == 1):
+                    m_randomPlayerOrder = MPRandomizePlayerTurns(clients[addr]['playerLimit'])
+                    for c in clients:
+                        if(clients[addr]['lobbyKey'] == clients[c]['lobbyKey']):
+                            clients[c]['replay'] = 0 # reset wanting to play
+                            message = {"header": 133, "RandomOrder": m_randomPlayerOrder} #send message telling game to restart
+                            m = json.dumps(message)
+                            sock.sendto(bytes(m, 'utf8'), c)
+
+
 
         else:  # if you arent part of the contact list then do the connection
             # if they are connecting..
@@ -76,6 +97,7 @@ def handle_messages(sock: socket.socket):
                 clients[addr]['lobbyKey'] = data['lobbyKey']
                 clients[addr]['playerLimit'] = 2
                 clients[addr]['SizeofBoard'] = 4
+                clients[addr]['replay'] = 0
 
                 #clients[addr]['hand'] = "null"
                 # tell your own client connected that you connected to it.
@@ -126,6 +148,7 @@ def CheckJoin(m_data, m_addr, m_sock):
         m_intToClient = 1 #message to server to tell it is real and has room
         clients[m_addr]['lobbyKey'] = m_data['lobbyKey'] #set this players lobby key
         clients[m_addr]['SizeofBoard'] = m_boardSize #set this players lobby key
+        clients[m_addr]['playerLimit'] = m_playerCount # set lobby player limit for replaybtn
         m_existingLobbyKey += 1 #add this player to the player count
         print("DOES EXIST")
     elif(m_existingLobbyKey == m_playerCount): #if the lobby is full, tell client.
