@@ -59,6 +59,8 @@ def handle_messages(sock: socket.socket):
                 print(clients[addr]['lobbyKey'])
             if(data['header'] == SocketMessageType.SENDBUTTON):
                 SendButtonToOtherPlayers(data,addr,sock)#send button to other clients
+            if(data['header'] == SocketMessageType.STARTGAME):
+                SendStartGameMessage(addr,sock)#check if the lobby is full and if you should start
             if(data['header'] == SocketMessageType.PLAYERQUIT):
                 for c in clients:
                     if(clients[addr]['lobbyKey'] == clients[c]['lobbyKey'] and addr != c): # send dc from server message to clients that are in lobby with someone who quit after game is over
@@ -159,10 +161,20 @@ def CheckJoin(m_data, m_addr, m_sock):
     print(message)
     m = json.dumps(message)
     m_sock.sendto(bytes(m, 'utf8'), m_addr)
+    
+def SendStartGameMessage( m_addr, m_sock):
+    m_existingLobbyKey = 0
+    m_playerCount = 2
+    for c in clients:
+        if( clients[m_addr]['lobbyKey'] == clients[c]['lobbyKey']):
+            # count how many clients have that lobbyKey
+            m_existingLobbyKey += 1
+            m_playerCount = clients[c]['playerLimit']
+
     if(m_existingLobbyKey == m_playerCount): #if the lobby is full after adding 1 to existing players then start the game.
         m_randomPlayerOrder = MPRandomizePlayerTurns(m_playerCount)
         for c in clients: #tell clients in lobby game is ready to start
-            if(m_data['lobbyKey'] == clients[c]['lobbyKey']):
+            if(clients[m_addr]['lobbyKey'] == clients[c]['lobbyKey']):
                 message = {"header": 127, "startGame": int(1), "RandomOrder": m_randomPlayerOrder}
                 m = json.dumps(message)
                 m_sock.sendto(bytes(m,'utf8'), (c[0],c[1]))

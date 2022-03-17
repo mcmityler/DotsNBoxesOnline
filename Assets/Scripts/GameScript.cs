@@ -575,7 +575,10 @@ public class GameScript : MonoBehaviour
        for (int i = 0; i < _numberOfPlayers; i++)
        {
            _whosTurn[i] = m_turnorder[i];
+           //Set turn order names...
+           ArrangeTurnOrder(i);
        }
+       
     }
     public void StartMultiplayerGameBoard()//everything needed to start a multiplayer board
     {  
