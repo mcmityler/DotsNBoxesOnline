@@ -83,5 +83,8 @@ public class MenuScript : MonoBehaviour
         _lobbyMenuSceenScreenObj.SetActive(true);
         _loginScreenObj.SetActive(true);
     }
+    public void TimedoutMPGame(){
+        _mainMenuObj.SetActive(true);
+    }
 
 }

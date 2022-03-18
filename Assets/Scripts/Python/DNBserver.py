@@ -27,10 +27,39 @@ class SocketMessageType(IntEnum):
     GETBUTTON =131 #SENT FROM SERVER TO CLIENT tells client what the other player pressed
     PLAYERQUIT = 132 #SENT FROM CLIENT TO SERVER && SERVER TO CLIENT tells server to tell all other clients to DC
     REPLAY = 133 #SENT FROM CLIENT TO SERVER to tell sever you want to play the game again with the same players.. Then back from server to client to tell it everyone said yes (if everyone wants to play again)
+    HEARTBEAT = 135 #SENT FROM CLIENT TO THE SERVER TO TELL IT THAT THE CLIENT IS STILL CONNECTED
+    TIMEDOUT = 136 #SENT FROM SERVER TO CLIENT TO TELL it that it has disconnect / timed out. 
+
+def cleanClients(sock): #check if there are any clients to disconnect
+    while True:
+        #use list(clients.keys()) because it makes a temporary copy of the list to iterate through rather then using the live list
+        for c in list(clients.keys()):
+            if(datetime.now()-clients[c]['lastBeat']).total_seconds() > 15: #check how long between heartbeat before dropping client
+                for q in list(clients.keys()): 
+                    if(c != q and clients[c]['lobbyID'] != "null"): # make sure you arent checking your own address && if they are in a lobby
+                        if(clients[c]['lobbyID'] == clients[q]['lobbyID']): #tell everyone in your lobby that you left
+                            SendTimeoutMessage(sock , q) #tell everyone who is stll in the lobby that you left.. depending on game stage do different things client side.
+                #drop the timedout client from my list.(if heartbeat has expired on server. it will likely have expired client side aswell)
+                clients_lock.acquire()
+                print("drop client" + clients[c])
+                del clients[c]
+                clients_lock.release()
+        
+        time.sleep(1)
+
+def SendTimeoutMessage(sock: socket.socket , playerInLobby):
+    clients[playerInLobby]['replay'] = 0 #reset replay incase player timesout after game and you already clicked reset
+    print("other player in lobby timed out... now do what I need to")
+    timedoutPayload = {} #dictionary
+    timedoutPayload['header'] = SocketMessageType.TIMEDOUT #fill in header
+    p = json.dumps(timedoutPayload).encode('utf-8') #convert obj to json formatted string.
+    sock.sendto(bytes(p), playerInLobby)
 
 
 
-# listen for messages from server..
+
+
+# -----------listen for messages from server..-----------------------
 def handle_messages(sock: socket.socket):
     print("listening to messages on new thread")
     while True:
@@ -39,7 +68,7 @@ def handle_messages(sock: socket.socket):
         data = str(data.decode("utf-8"))
         data = json.loads(data)
 
-        #print(f'Recieved message from {addr}: {data}')
+        print(f'Recieved message from {addr}: {data}')
 
         #payload = "guess recieved"
         #payload = bytes(payload.encode("utf-8"))
@@ -48,6 +77,14 @@ def handle_messages(sock: socket.socket):
             if(data['header'] == SocketMessageType.CONNECTDNB):
                 clients[addr]['lobbyKey'] = data['lobbyKey']
                 print(clients[addr]['lobbyKey'])
+            if(data['header'] == SocketMessageType.TIMEDOUT): #sent from client to server when the client is in the middle of a game and gets DCED
+                clients[addr]['lobbyKey'] = "null"#reset lobby ID to null
+                clients[c]['replay'] = 0 #reset wanting to play again incase someone clicked replay
+            if (data['header'] == SocketMessageType.HEARTBEAT): #if header is heartbeat then update heartbeat time.
+                    clients[addr]['lastBeat'] = datetime.now() #update heartbeat
+                    message = {"header": 135}
+                    m = json.dumps(message)
+                    sock.sendto(bytes(m, 'utf8'), addr) #send a heartbeat back to the client.
             if(data['header'] == SocketMessageType.HOSTDNBGAME):
                 CreateNewLobby(addr, sock)
                 clients[addr]['SizeofBoard'] = data['SizeofBoard']
@@ -100,6 +137,7 @@ def handle_messages(sock: socket.socket):
                 clients[addr]['playerLimit'] = 2
                 clients[addr]['SizeofBoard'] = 4
                 clients[addr]['replay'] = 0
+                clients[addr]['lastBeat'] = datetime.now()
 
                 #clients[addr]['hand'] = "null"
                 # tell your own client connected that you connected to it.
@@ -108,6 +146,9 @@ def handle_messages(sock: socket.socket):
                 m = json.dumps(message)
                 sock.sendto(bytes(m, 'utf8'), addr)
                 print(clients[addr]['lobbyKey'])
+            if (data['header'] == SocketMessageType.HEARTBEAT): #if header is heartbeat then update heartbeat time.
+                print(str(addr) + " has already been disconnected")
+                SendTimeoutMessage(sock, addr)
 
         clients_lock.release()
 
@@ -200,6 +241,7 @@ def MPRandomizePlayerTurns(m_playerCount):
     return m_randomPlayerOrder
 
 
+
 def main():
     PORT = 12345
     print("Starting server.. on PORT: " + str(PORT))
@@ -208,6 +250,8 @@ def main():
 
     # start new thread for listening to messages
     _thread.start_new_thread(handle_messages, (s,))
+    _thread.start_new_thread(cleanClients, (s,))
+    cleanClients
 
     while True:
         time.sleep(1)
