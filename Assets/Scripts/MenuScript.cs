@@ -47,7 +47,7 @@ public class MenuScript : MonoBehaviour
         
         _mainMenuObj.SetActive(true);
 
-        _socketManager.DestroyUDP(); //destroy UDP if it is running and you go back to main menu
+        _socketManager.OnDestroy(); //destroy UDP if it is running and you go back to main menu
     }
     public void QuitButton()//called by quit button on main menu / lobby menu
     {
@@ -85,6 +85,7 @@ public class MenuScript : MonoBehaviour
     }
     public void TimedoutMPGame(){
         _mainMenuObj.SetActive(true);
+        _loginScreenObj.SetActive(false);
     }
 
 }

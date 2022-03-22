@@ -17,7 +17,6 @@ class SocketMessageType(IntEnum):
     NOTHING = 120  # nothing
     CONNECTDNB = 121 #client to server telling it to join // or resetting their lobby Key
     UPDATEDNB = 122 # sent from server to client to update 
-    NEWDNBCLIENT = 123 #server to client to tell it your own address 
     HOSTDNBGAME = 124 #client to server when you want to start a new game lobby
     JOINDNBGAME = 125  # sent from client to server to check if lobby Key exists
     CHECKLOBBY = 126  # sent from the server to the client to tell if lobby is existent
@@ -41,7 +40,7 @@ def cleanClients(sock): #check if there are any clients to disconnect
                             SendTimeoutMessage(sock , q) #tell everyone who is stll in the lobby that you left.. depending on game stage do different things client side.
                 #drop the timedout client from my list.(if heartbeat has expired on server. it will likely have expired client side aswell)
                 clients_lock.acquire()
-                print("drop client" + clients[c])
+                print("drop client" + str(clients[c]))
                 del clients[c]
                 clients_lock.release()
         
@@ -138,17 +137,18 @@ def handle_messages(sock: socket.socket):
                 clients[addr]['SizeofBoard'] = 4
                 clients[addr]['replay'] = 0
                 clients[addr]['lastBeat'] = datetime.now()
+                clients[addr]['checklist'] = []
 
                 #clients[addr]['hand'] = "null"
-                # tell your own client connected that you connected to it.
-                message = {"header": 123, "players": [
+                # tell your own client connected that you connected to it. (start heartbeat client side)
+                message = {"header": 121, "players": [
                     {"adress": str(addr), "lobbyKey": str(data['lobbyKey'])}, ]}
                 m = json.dumps(message)
                 sock.sendto(bytes(m, 'utf8'), addr)
                 print(clients[addr]['lobbyKey'])
             if (data['header'] == SocketMessageType.HEARTBEAT): #if header is heartbeat then update heartbeat time.
                 print(str(addr) + " has already been disconnected")
-                SendTimeoutMessage(sock, addr)
+                #SendTimeoutMessage(sock, addr)
 
         clients_lock.release()
 
