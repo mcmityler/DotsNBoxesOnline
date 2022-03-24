@@ -50,7 +50,10 @@ public class SocketManager : MonoBehaviour
     private string _lobbyString = "null"; //current lobby string
     const string characters = "abcdefghijkmnpqrstuvwxyz23456789"; //chars for random lobby key
 
-    private List<string> _checklist = new List<string>();
+    private List<string> _checklist = new List<string>(); // list that holds tasks I want to send to the server
+    private DateTime heartbeatTimer = DateTime.Now; //heartbeat timer for client side before it timesout
+    private bool _checklistEmpty = true; //is the checklist empty / should you send a heartbeat since its empty
+    private bool _startHeartbeat = false; //start heartbeat in update loop when server gets back connect message.
 
     void Awake()
     {
@@ -63,7 +66,7 @@ public class SocketManager : MonoBehaviour
     }
     public void OnDestroy()
     {
-       // call this function if you ever want to destroy UDP for client
+        // call this function if you ever want to destroy UDP for client
         if (udp != null)
         {
             udp.Dispose();
@@ -152,7 +155,7 @@ public class SocketManager : MonoBehaviour
             heartbeatTimer = DateTime.Now;
 
         }
-        if ((DateTime.Now - heartbeatTimer).TotalSeconds > 15 && heartbeating)
+        if ((DateTime.Now - heartbeatTimer).TotalSeconds > 35 && heartbeating)
         {
             _lobbyString = "null"; //set lobby to null
             _currentGamestate = GAMESTATE.STARTMENU; //go back to lobbymenu gamestate
@@ -171,48 +174,11 @@ public class SocketManager : MonoBehaviour
                 Debug.Log("start beating");
                 heartbeating = true; //make sure it doesnt start more then once
                 heartbeatTimer = DateTime.Now;
-                InvokeRepeating("HeartBeatMessageToServer", 1, 1);  //send a repeating message to server every second to tell server that client is still connected.
+                InvokeRepeating("HeartBeatMessageToServer", 0, 0.5f);  //send a repeating message to server every second to tell server that client is still connected.
             }
         }
     }
-    private void DoChecklist()
-    {
-        switch (_checklist[0])
-        {
-            case "HOST":
-                break;
-        }
-    }
-    private DateTime heartbeatTimer = DateTime.Now;
-    public void LoginButton() //login button on Lobby menu screen
-    {
-        _tempPasswordInput = _passwordInputText.text; //get password from password input
-        _tempUserInput = _usernameInputText.text; //get username from username input
-        if (_tempPasswordInput == "" || _tempUserInput == "")//if username or password is left blank display error message
-        {
-            Debug.Log("must enter a username and password");
-            _errorUserPassText.text = "Cannot leave empty";
-        }
-        else
-        {
-            //SEND password and user to server and examine them.
-            //Check if user name is in system
 
-            //Check if password matches username in system
-            _correctUandP = true;
-            _errorUserPassText.text = ""; //Reset back to nothing once you enter a correct U & P
-        }
-
-        //if the user and password are correct login...
-        if (_correctUandP)
-        {
-            _menuScript.LobbyMenuSceenButton();
-        }
-
-        playerQuitText.gameObject.SetActive(false); //hide player quit text 
-
-
-    }
 
     public void startUDP() //start UDP and connect to server.
     {
@@ -225,7 +191,7 @@ public class SocketManager : MonoBehaviour
         {
             Debug.LogError("Didnt find IP address");
         }
-        SendServerPayload("CONNECTDNB", false); //send a connect message to server (also add player to a connect list).
+        SendServerPayload("CONNECTDNB", true); //send a connect message to server (also add player to a connect list).
         udp.BeginReceive(new AsyncCallback(OnRecieved), udp);    //wait for server messages...
 
 
@@ -249,7 +215,6 @@ public class SocketManager : MonoBehaviour
         //handle message you recieved.
         HandleMessagePayload(returnData);
     }
-    private bool _startHeartbeat = false;
     void HandleMessagePayload(string data)
     { //recieved message from server now process it.
         Debug.Log("Got Message: " + data);
@@ -273,9 +238,15 @@ public class SocketManager : MonoBehaviour
 
                 //gmScript.FillClientDetails(newClientPayload.players[0].id, newClientPayload.players[0].lobbyID);//tell client what its own ID is and what lobby it is in
                 break;
-            case socketMessagetype.SENDLOBBYKEY:
-                LobbyKeyClientMessage newLobbyKeyPayload = JsonUtility.FromJson<LobbyKeyClientMessage>(data);
-                _lobbyString = newLobbyKeyPayload.lobbyKey;
+            case socketMessagetype.SENDLOBBYKEY: //received back if you send server  host message
+                LobbyKeyClientMessage newLobbyKeyPayload = JsonUtility.FromJson<LobbyKeyClientMessage>(data); //message from server with lobby ID for your hosted lobby
+                _lobbyString = newLobbyKeyPayload.lobbyKey; //set lobby ID on client
+                Debug.Log("Hosting!");
+                _recievedHeartbeat = true; //recieved heartbeat since you sent a host msg instead of heartbeat
+                if (_checklist[0] == "HOSTDNBGAME") //if the first item in the list is hostdnb game remove it from the list.
+                {
+                    _checklist.RemoveAt(0);
+                }
                 break;
             case socketMessagetype.CHECKLOBBY:
                 LobbyCheckClientMessage checkLobbyPayload = JsonUtility.FromJson<LobbyCheckClientMessage>(data); //convert data from base class to result class
@@ -307,6 +278,11 @@ public class SocketManager : MonoBehaviour
 
                     _errorKeyMessage = "Lobby " + _lobbyString + " is full";
                     _lobbyString = "null";
+                }
+                _recievedHeartbeat = true; //tell client it got a message from server
+                if (_checklist[0] == "JOINDNBGAME") //if the first to do list item was join game remove it from the list.
+                {
+                    _checklist.RemoveAt(0);
                 }
                 //gmScript.FillClientDetails(newClientPayload.players[0].id, newClientPayload.players[0].lobbyID);//tell client what its own ID is and what lobby it is in
                 break;
@@ -349,17 +325,14 @@ public class SocketManager : MonoBehaviour
         {
             switch (m_messageType)
             {
-                case "CONNECTDNB":
-                    m_lobbykeyMessage = true;
-                    break;
                 case "REPLAY":
-                    var rpayload = new RestartClientMessage
+                    var replayPayload = new RestartClientMessage
                     { //payload is what you are sending to server.
                         header = socketMessagetype.REPLAY, //header tells server what type of message it is.
                         replay = 1 //tells server yes (1 = true since python doesnt have booleans)
                     };
-                    var rdata = Encoding.ASCII.GetBytes(JsonUtility.ToJson(rpayload)); //convert payload to transmittable data.(json file)
-                    udp.Send(rdata, rdata.Length); //send data to server you connected to in start func.
+                    var replayData = Encoding.ASCII.GetBytes(JsonUtility.ToJson(replayPayload)); //convert payload to transmittable data.(json file)
+                    udp.Send(replayData, replayData.Length); //send data to server you connected to in start func.
                     break;
                 case "HOSTDNBGAME":
                     m_lobbykeyMessage = true;
@@ -398,7 +371,28 @@ public class SocketManager : MonoBehaviour
 
     }
 
+    private void DoChecklist()
+    {
+        if (_checklist.Count == 0) //if the checklist has nothing in it
+        {
+            _checklistEmpty = true;
+            return;
+        }
+        else if (_checklist.Count >= 1) //if the checklist has atleast one item in it.
+        {
+            _checklistEmpty = false;
+            switch (_checklist[0])
+            {
+                case "HOSTDNBGAME":
+                    SendServerPayload("HOSTDNBGAME", false);
+                    break;
+                case "JOINDNBGAME":
+                    SendServerPayload("JOINDNBGAME", false);
+                    break;
+            }
+        }
 
+    }
     void HeartBeatMessageToServer()
     { //tell server client is connected every second
         if (!heartbeating)
@@ -407,17 +401,50 @@ public class SocketManager : MonoBehaviour
             Debug.Log("stop beating");
             return;
         }
-
-        var payload = new BaseSocketMessage
+        DoChecklist(); //do first item on checklist if anything is on it.
+        if (_checklistEmpty) //if there were no other server messages to send, send heartbeat.
         {
-            header = socketMessagetype.HEARTBEAT,
-        };
-        var data = Encoding.ASCII.GetBytes(JsonUtility.ToJson(payload));
-        udp.Send(data, data.Length);
+            var payload = new BaseSocketMessage
+            {
+                header = socketMessagetype.HEARTBEAT,
+            };
+            var data = Encoding.ASCII.GetBytes(JsonUtility.ToJson(payload));
+            udp.Send(data, data.Length);
+
+        }
         Debug.Log("beating");
+
     }
 
+    public void LoginButton() //login button on Lobby menu screen
+    {
+        _tempPasswordInput = _passwordInputText.text; //get password from password input
+        _tempUserInput = _usernameInputText.text; //get username from username input
+        if (_tempPasswordInput == "" || _tempUserInput == "")//if username or password is left blank display error message
+        {
+            Debug.Log("must enter a username and password");
+            _errorUserPassText.text = "Cannot leave empty";
+        }
+        else
+        {
+            //SEND password and user to server and examine them.
+            //Check if user name is in system
 
+            //Check if password matches username in system
+            _correctUandP = true;
+            _errorUserPassText.text = ""; //Reset back to nothing once you enter a correct U & P
+        }
+
+        //if the user and password are correct login...
+        if (_correctUandP)
+        {
+            _menuScript.LobbyMenuSceenButton();
+        }
+
+        playerQuitText.gameObject.SetActive(false); //hide player quit text 
+
+
+    }
     public void SendButtonMessage(string m_bName, int m_row)
     {
         var payload = new ButtonMessage
@@ -435,7 +462,7 @@ public class SocketManager : MonoBehaviour
         _currentGamestate = GAMESTATE.LOBBYMENU; //change gamestate back to lobbymenu
         _gameScript.SetGSGameState(_currentGamestate.ToString()); //update gamescript gamestate
         _lobbyString = "null"; //make your lobby Key back to null or nonexistent
-        SendServerPayload("CONNECTDNB", false); // change your lobby Key on the server / true means send it to server not check if its real.
+        SendServerPayload("CONNECTDNB", true); // change your lobby Key on the server / true means send it to server not check if its real.
         _multiplayerGameStarted = false; //make sure you exit game started.
         playerQuitText.gameObject.SetActive(false); //hide player quit text
     }
@@ -458,7 +485,8 @@ public class SocketManager : MonoBehaviour
     public void HostGameButton()
     {
         _gameScript.SetSizeofBoard(-1); //tell client board size from slider, so that when you host it sends the server the right size
-        SendServerPayload("HOSTDNBGAME", false); //send message to server telling you are hosting a game and to send back a unique lobby key
+        _checklist.Add("HOSTDNBGAME");
+        //SendServerPayload("HOSTDNBGAME", false); //send message to server telling you are hosting a game and to send back a unique lobby key
         _menuScript.LobbyKeyScreenToggle();
         _currentGamestate = GAMESTATE.HOSTSCREEN;
         _gameScript.SetGSGameState(_currentGamestate.ToString());
@@ -469,11 +497,11 @@ public class SocketManager : MonoBehaviour
     public void JoinGameButton()
     {
         _lobbyString = _lobbyKeyInput.text;
-        if (_lobbyString != "null")
+        if (_lobbyString != "null" && _lobbyString.Length >= 5)
         { //make sure they didnt type null (the default lobbykey)
-            SendServerPayload("JOINDNBGAME", false); //send message to server telling it what you entered for a Key guess and return a message if its correct.
+            _checklist.Add("JOINDNBGAME");
         }
-        else
+        else if(_lobbyString.Length < 5)
         {
             _errorKeyMessage = "Lobby Key " + _lobbyString + " Non-Existent";
         }

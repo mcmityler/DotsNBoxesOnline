@@ -33,7 +33,7 @@ def cleanClients(sock): #check if there are any clients to disconnect
     while True:
         #use list(clients.keys()) because it makes a temporary copy of the list to iterate through rather then using the live list
         for c in list(clients.keys()):
-            if(datetime.now()-clients[c]['lastBeat']).total_seconds() > 15: #check how long between heartbeat before dropping client
+            if(datetime.now()-clients[c]['lastBeat']).total_seconds() > 35: #check how long between heartbeat before dropping client
                 for q in list(clients.keys()): 
                     if(c != q and clients[c]['lobbyID'] != "null"): # make sure you arent checking your own address && if they are in a lobby
                         if(clients[c]['lobbyID'] == clients[q]['lobbyID']): #tell everyone in your lobby that you left
@@ -74,7 +74,7 @@ def handle_messages(sock: socket.socket):
         clients_lock.acquire()
         if(addr in clients):  # check if address is already in client list, if so then do something with that client
             if(data['header'] == SocketMessageType.CONNECTDNB):
-                clients[addr]['lobbyKey'] = data['lobbyKey']
+                clients[addr]['lobbyKey'] = "null"
                 print(clients[addr]['lobbyKey'])
             if(data['header'] == SocketMessageType.TIMEDOUT): #sent from client to server when the client is in the middle of a game and gets DCED
                 clients[addr]['lobbyKey'] = "null"#reset lobby ID to null
@@ -85,11 +85,13 @@ def handle_messages(sock: socket.socket):
                     m = json.dumps(message)
                     sock.sendto(bytes(m, 'utf8'), addr) #send a heartbeat back to the client.
             if(data['header'] == SocketMessageType.HOSTDNBGAME):
+                clients[addr]['lastBeat'] = datetime.now()
                 CreateNewLobby(addr, sock)
                 clients[addr]['SizeofBoard'] = data['SizeofBoard']
                 clients[addr]['playerLimit'] = data['playerLimit'] #change size of the lobby based off what the host wants.
                 print(clients[addr]['lobbyKey'])
             if(data['header'] == SocketMessageType.JOINDNBGAME):
+                clients[addr]['lastBeat'] = datetime.now()
                 CheckJoin(data, addr, sock)
 
                 print(clients[addr]['lobbyKey'])
@@ -132,7 +134,7 @@ def handle_messages(sock: socket.socket):
             if(data['header'] == SocketMessageType.CONNECTDNB):
                 clients[addr] = {}  # -----------------create new client --------------
                 #clients[addr]['lastBeat'] = datetime.now()
-                clients[addr]['lobbyKey'] = data['lobbyKey']
+                clients[addr]['lobbyKey'] = "null"
                 clients[addr]['playerLimit'] = 2
                 clients[addr]['SizeofBoard'] = 4
                 clients[addr]['replay'] = 0
@@ -141,8 +143,7 @@ def handle_messages(sock: socket.socket):
 
                 #clients[addr]['hand'] = "null"
                 # tell your own client connected that you connected to it. (start heartbeat client side)
-                message = {"header": 121, "players": [
-                    {"adress": str(addr), "lobbyKey": str(data['lobbyKey'])}, ]}
+                message = {"header": 121 }
                 m = json.dumps(message)
                 sock.sendto(bytes(m, 'utf8'), addr)
                 print(clients[addr]['lobbyKey'])
