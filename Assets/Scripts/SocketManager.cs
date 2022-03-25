@@ -110,7 +110,8 @@ public class SocketManager : MonoBehaviour
         if (_recieveButton)
         { //what to do when you get a button.
             _recieveButton = false;
-            _gameScript.MPButtonClicked(_tempButtonName, _tempIsRowButton);
+            _gameScript.MPButtonClicked(_tempButtonName);
+            
 
         }
         if (_playerQuitAfterGame)
@@ -291,8 +292,9 @@ public class SocketManager : MonoBehaviour
                 if (startGamePayload.startGame == 1)
                 { //start game
                     Debug.Log("StartGame!");
-                    _multiplayerLobbyReady = true;
+                    
                     _gameScript.MPSetTurnOrder(startGamePayload.RandomOrder); //set random turn order
+                    _multiplayerLobbyReady = true;
 
                 }
                 //gmScript.FillClientDetails(newClientPayload.players[0].id, newClientPayload.players[0].lobbyID);//tell client what its own ID is and what lobby it is in
@@ -361,7 +363,7 @@ public class SocketManager : MonoBehaviour
             { //payload is what you are sending to server.
                 header = m_tempmessagetype, //header tells server what type of message it is.
                 lobbyKey = _lobbyString,
-                playerLimit = _gameScript.GetPlayerSize(),
+                playerLimit = _gameScript.GetPlayerSize(), //tell server and other players how many players in the game if host.
                 SizeofBoard = _gameScript.GetBoardSize()
             };
             Debug.Log(payload.SizeofBoard);
@@ -371,16 +373,16 @@ public class SocketManager : MonoBehaviour
 
     }
 
-    private void DoChecklist()
+    private bool DoChecklist()
     {
         if (_checklist.Count == 0) //if the checklist has nothing in it
         {
             _checklistEmpty = true;
-            return;
+            return true; //if the list isnt populated.
         }
         else if (_checklist.Count >= 1) //if the checklist has atleast one item in it.
         {
-            _checklistEmpty = false;
+            
             switch (_checklist[0])
             {
                 case "HOSTDNBGAME":
@@ -391,6 +393,7 @@ public class SocketManager : MonoBehaviour
                     break;
             }
         }
+        return false; //if the checklist has one item
 
     }
     void HeartBeatMessageToServer()
@@ -401,8 +404,7 @@ public class SocketManager : MonoBehaviour
             Debug.Log("stop beating");
             return;
         }
-        DoChecklist(); //do first item on checklist if anything is on it.
-        if (_checklistEmpty) //if there were no other server messages to send, send heartbeat.
+        if (DoChecklist())//do first item on checklist if anything is on it. //if there were no other server messages to send, send heartbeat.
         {
             var payload = new BaseSocketMessage
             {
@@ -445,16 +447,18 @@ public class SocketManager : MonoBehaviour
 
 
     }
-    public void SendButtonMessage(string m_bName, int m_row)
+    public void SendButtonMessage(string m_bName)
     {
         var payload = new ButtonMessage
         { //payload is what you are sending to server.
             header = socketMessagetype.SENDBUTTON, //header tells server what type of message it is.
-            buttonName = m_bName,
-            isRowButton = m_row //send row as int because python doesnt have bools
+            buttonName = m_bName //send buttons name
         };
         var data = Encoding.ASCII.GetBytes(JsonUtility.ToJson(payload)); //convert payload to transmittable data.(json file)
         udp.Send(data, data.Length); //send data to server you connected to in start func. 
+    }
+    public void RecivedButtonMessage(){
+        SendServerPayload("BUTTONRECEIVED", true);
     }
     public void BackToLobbyMenu()
     { //called by the back button in the host key lobby.
@@ -533,7 +537,8 @@ public enum socketMessagetype
     PLAYERQUIT = 132, //SENT FROM CLIENT TO SERVER && SERVER TO CLIENT tells server to tell all other clients to DC
     REPLAY = 133, //SENT FROM CLIENT TO SERVER to tell sever you want to play the game again with the same players.. Then back from server to client to tell it everyone said yes (if everyone wants to play again)
     HEARTBEAT = 135, //SENT FROM CLIENT TO THE SERVER TO TELL IT THAT THE CLIENT IS STILL CONNECTED
-    TIMEDOUT = 136 //SENT FROM SERVER TO CLIENT TO TELL it that it has disconnect / timed out.
+    TIMEDOUT = 136, //SENT FROM SERVER TO CLIENT TO TELL it that it has disconnect / timed out.
+    BUTTONRECEIVED = 137
 
 }
 

@@ -185,6 +185,11 @@ public class GameScript : MonoBehaviour
             _localNameInputAnimator.SetInteger("PlayerAmount", _numberOfPlayers); //Animate how many player name inputs are visable
             _turnOrderAnimator.SetInteger("PlayerAmount", _numberOfPlayers);//Animate how many players are shown in turn order
         }
+        if(!_localGame) //if multiplayer
+        {
+            _turnOrderAnimator.SetInteger("PlayerAmount", _numberOfPlayers);//Animate how many players are shown in turn order
+
+        }
     }
     public void GameStartButton()//start game button from board setting panel
     {
@@ -230,7 +235,7 @@ public class GameScript : MonoBehaviour
                 rectTransformRow.position = new Vector2(_backgroundObj.GetComponent<RectTransform>().rect.width / 2 + (_boardSize / 2 * 80) - i * 80, _backgroundObj.GetComponent<RectTransform>().rect.height / 2 + (_boardSize / 2 * 80) + 35 - b * 80);
                 rButton.name = (b.ToString() + i.ToString() + "r"); //set name of rButton
                 _gameBoard.rowButtons.Add(rButton.name, rButton); //add rButton to dictionary with rButton name
-                _gameBoard.rowButtons[rButton.name].onClick.AddListener(() => ButtonClicked(rButton, true, true)); //add listener to rButton so it knows when its clicked and which is clicked. ************ PASSES TRUE SO IT KNOWS ITS A ROW
+                _gameBoard.rowButtons[rButton.name].onClick.AddListener(() => ButtonClicked(rButton, true)); //add listener to rButton so it knows when its clicked and which is clicked. ************ PASSES TRUE SO IT KNOWS ITS A ROW
                 _gameBoard.rowClicked.Add(rButton.name, false); //add if rButton is clicked to dictionary with rButton name
 
 
@@ -245,7 +250,7 @@ public class GameScript : MonoBehaviour
                 rectTransformCol.eulerAngles = new Vector3(rectTransformCol.transform.eulerAngles.x, rectTransformCol.transform.eulerAngles.y, 90);
                 cButton.name = (i.ToString() + b.ToString() + "c");//set name of cButton
                 _gameBoard.colButtons.Add(cButton.name, cButton); //add cButton to dictionary with cButton name
-                _gameBoard.colButtons[cButton.name].onClick.AddListener(() => ButtonClicked(cButton, false, true));//add listener to cButton so it knows when its clicked and which is clicked. ************ PASSES FALSE SO IT KNOWS ITS A COL
+                _gameBoard.colButtons[cButton.name].onClick.AddListener(() => ButtonClicked(cButton, true));//add listener to cButton so it knows when its clicked and which is clicked. ************ PASSES FALSE SO IT KNOWS ITS A COL
                 _gameBoard.colClicked.Add(cButton.name, false);//add if cButton is clicked to dictionary with cButton name
             }
         }
@@ -309,16 +314,16 @@ public class GameScript : MonoBehaviour
     }
 
 
-    public void ButtonClicked(Button m_b, bool m_row, bool _youPressed) //function is called when row or column button is pressed, passes button pressed & bool for whether it is a row or col button.
+    public void ButtonClicked(Button m_b, bool _youPressed) //function is called when row or column button is pressed, passes button pressed & bool for whether it is a row or col button.
     {
         if (_localGame || (_whosTurn[_turnRotation] == _myPlayerNumberMP && !_localGame) || (!_localGame && !_youPressed)) //only click button if its local, your turn, or you are recieving a button
         {
             bool m_alreadyClicked = false; //temp holds if it has been pressed in the past
-            if (m_row && _gameBoard.rowClicked[m_b.name] != true)//check it it is a ROW button && if it HASNT been pressed.
+            if (m_b.name.Contains('r') && _gameBoard.rowClicked[m_b.name] != true)//check it it is a ROW button && if it HASNT been pressed.
             {
                 _gameBoard.rowClicked[m_b.name] = true;
             }
-            else if (!m_row && _gameBoard.colClicked[m_b.name] != true)//check it it is a COL button && if  it HASNT been pressed.
+            else if (m_b.name.Contains('c') && _gameBoard.colClicked[m_b.name] != true)//check it it is a COL button && if  it HASNT been pressed.
             {
                 _gameBoard.colClicked[m_b.name] = true;
             }
@@ -354,18 +359,12 @@ public class GameScript : MonoBehaviour
 
                 if (!_localGame && _youPressed) //if multi AND you pressed button send to other players
                 {
-                    //Convert bool to int to send button to server
-                    int m_tempint = 0;
-                    if (m_row)
-                    {
-                        m_tempint = 1;
-                    }
-                    if (!m_row)
-                    {
-                        m_tempint = 0;
-                    }
+                    
                     //send button to server
-                    _socketManager.SendButtonMessage(m_b.name, m_tempint);
+                    _socketManager.SendButtonMessage(m_b.name);
+                }
+                if(!_localGame && !_youPressed){
+                    _socketManager.RecivedButtonMessage();
                 }
             }
         }
@@ -554,6 +553,10 @@ public class GameScript : MonoBehaviour
     { //get player size froms script while its private
         return _numberOfPlayers;
     }
+    /*public void SetPlayerSize(int m_playerSize)
+    { //get player size froms script while its private
+        _numberOfPlayers = m_playerSize;
+    }*/
     public int GetBoardSize()
     { //get size of board from script while its private
         return _boardSize;
@@ -572,12 +575,15 @@ public class GameScript : MonoBehaviour
     }
     public void MPSetTurnOrder(int[] m_turnorder) //Get the turn order from the server and set it
     {
+        
+       _numberOfPlayers = m_turnorder.Length;
        for (int i = 0; i < _numberOfPlayers; i++)
        {
            _whosTurn[i] = m_turnorder[i];
            //Set turn order names...
            ArrangeTurnOrder(i);
        }
+       _turnOrderAnimator.SetInteger("PlayerAmount", _numberOfPlayers);//Animate how many players are shown in turn order
        
     }
     public void StartMultiplayerGameBoard()//everything needed to start a multiplayer board
@@ -595,19 +601,9 @@ public class GameScript : MonoBehaviour
         RestartButton(true);
 
     }
-    public void MPButtonClicked(string m_bName, int m_row) //What to do when you get a button click from another player
+    public void MPButtonClicked(string m_bName) //What to do when you get a button click from another player
     {
-        //convert int from server to bool for client
-        bool m_tempBool = false;
-        if (m_row == 0)
-        {
-            m_tempBool = false;
-        }
-        if (m_row == 1)
-        {
-            m_tempBool = true;
-        }
-        ButtonClicked(GameObject.Find(m_bName).GetComponent<Button>(), m_tempBool, false); //false to say you didnt press it you got it from the server. 
+        ButtonClicked(GameObject.Find(m_bName).GetComponent<Button>(), false); //false to say you didnt press it you got it from the server. 
     }
     public void HideScoreBoard(){
         _gameoverObj.SetActive(false);

@@ -1,3 +1,4 @@
+from email import header
 from re import A
 import socket
 import _thread
@@ -28,21 +29,25 @@ class SocketMessageType(IntEnum):
     REPLAY = 133 #SENT FROM CLIENT TO SERVER to tell sever you want to play the game again with the same players.. Then back from server to client to tell it everyone said yes (if everyone wants to play again)
     HEARTBEAT = 135 #SENT FROM CLIENT TO THE SERVER TO TELL IT THAT THE CLIENT IS STILL CONNECTED
     TIMEDOUT = 136 #SENT FROM SERVER TO CLIENT TO TELL it that it has disconnect / timed out. 
+    BUTTONRECEIVED = 137
 
 def cleanClients(sock): #check if there are any clients to disconnect
     while True:
         #use list(clients.keys()) because it makes a temporary copy of the list to iterate through rather then using the live list
+        
         for c in list(clients.keys()):
-            if(datetime.now()-clients[c]['lastBeat']).total_seconds() > 35: #check how long between heartbeat before dropping client
+            if(datetime.now()-clients[c]['lastBeat']).total_seconds() > 15: #check how long between heartbeat before dropping client
                 for q in list(clients.keys()): 
-                    if(c != q and clients[c]['lobbyID'] != "null"): # make sure you arent checking your own address && if they are in a lobby
-                        if(clients[c]['lobbyID'] == clients[q]['lobbyID']): #tell everyone in your lobby that you left
-                            SendTimeoutMessage(sock , q) #tell everyone who is stll in the lobby that you left.. depending on game stage do different things client side.
+                    if(c != q and c in clients ): # make sure you arent checking your own address && that the numbers arent out of bounds
+                        if(clients[c]['lobbyKey'] != "null"): #if they are in a lobby
+                            if(clients[c]['lobbyKey'] == clients[q]['lobbyKey']): #tell everyone in your lobby that you left
+                                SendTimeoutMessage(sock , q) #tell everyone who is stll in the lobby that you left.. depending on game stage do different things client side.
                 #drop the timedout client from my list.(if heartbeat has expired on server. it will likely have expired client side aswell)
                 clients_lock.acquire()
-                print("drop client" + str(clients[c]))
+                print("drop client" + str(c) + str(clients[c]))
                 del clients[c]
                 clients_lock.release()
+            break
         
         time.sleep(1)
 
@@ -66,8 +71,8 @@ def handle_messages(sock: socket.socket):
         data, addr = sock.recvfrom(1024)
         data = str(data.decode("utf-8"))
         data = json.loads(data)
-
-        print(f'Recieved message from {addr}: {data}')
+        if(data['header'] != SocketMessageType.HEARTBEAT): # only print messages that arent the heart beat
+            print(f'Recieved message from {addr}: {data}')
 
         #payload = "guess recieved"
         #payload = bytes(payload.encode("utf-8"))
@@ -76,9 +81,12 @@ def handle_messages(sock: socket.socket):
             if(data['header'] == SocketMessageType.CONNECTDNB):
                 clients[addr]['lobbyKey'] = "null"
                 print(clients[addr]['lobbyKey'])
+            if(data['header'] == SocketMessageType.BUTTONRECEIVED):
+                clients[addr]['checklistButton'].pop(0)
+                print(clients[addr]['checklistButton'])
             if(data['header'] == SocketMessageType.TIMEDOUT): #sent from client to server when the client is in the middle of a game and gets DCED
                 clients[addr]['lobbyKey'] = "null"#reset lobby ID to null
-                clients[c]['replay'] = 0 #reset wanting to play again incase someone clicked replay
+                clients[addr]['replay'] = 0 #reset wanting to play again incase someone clicked replay
             if (data['header'] == SocketMessageType.HEARTBEAT): #if header is heartbeat then update heartbeat time.
                     clients[addr]['lastBeat'] = datetime.now() #update heartbeat
                     message = {"header": 135}
@@ -96,7 +104,7 @@ def handle_messages(sock: socket.socket):
 
                 print(clients[addr]['lobbyKey'])
             if(data['header'] == SocketMessageType.SENDBUTTON):
-                SendButtonToOtherPlayers(data,addr,sock)#send button to other clients
+                AddButtonToChecklist(data,addr)#send button to other clients
             if(data['header'] == SocketMessageType.STARTGAME):
                 SendStartGameMessage(addr,sock)#check if the lobby is full and if you should start
             if(data['header'] == SocketMessageType.PLAYERQUIT):
@@ -139,7 +147,7 @@ def handle_messages(sock: socket.socket):
                 clients[addr]['SizeofBoard'] = 4
                 clients[addr]['replay'] = 0
                 clients[addr]['lastBeat'] = datetime.now()
-                clients[addr]['checklist'] = []
+                clients[addr]['checklistButton'] = []
 
                 #clients[addr]['hand'] = "null"
                 # tell your own client connected that you connected to it. (start heartbeat client side)
@@ -221,13 +229,21 @@ def SendStartGameMessage( m_addr, m_sock):
                 m = json.dumps(message)
                 m_sock.sendto(bytes(m,'utf8'), (c[0],c[1]))
 
-def SendButtonToOtherPlayers(m_data, m_addr, m_sock): #send other client buttons that players press
+def SendButtonToOtherPlayers(sock: socket.socket):#send other client buttons that players press
+    while True: #make sure it keeps running
+        for c in clients:
+            if(clients[c]['lobbyKey'] != "null"): # check if you are in a lobby 
+                if(len(clients[c]['checklistButton']) != 0): #if you have the same lobby key and its not your address send it the button pressed
+                    #cycle through list and remove buttons after they get sent / pressed.
+                    message = {"header": 131, "buttonName": str(clients[c]['checklistButton'][0])}
+                    m = json.dumps(message)
+                    sock.sendto(bytes(m,'utf8'), (c[0],c[1]))
+        time.sleep(1)
+
+def AddButtonToChecklist(m_data, m_addr):
     for c in clients:
         if(clients[m_addr]['lobbyKey'] == clients[c]['lobbyKey'] and c != m_addr): #if you have the same lobby key and its not your address send it the button pressed
-            message = {"header": 131, "buttonName": str(m_data['buttonName']), "isRowButton": int(m_data['isRowButton'])}
-            m = json.dumps(message)
-            m_sock.sendto(bytes(m,'utf8'), (c[0],c[1]))
-
+            clients[c]['checklistButton'].append(m_data['buttonName'])
 def MPRandomizePlayerTurns(m_playerCount):
     m_randomPlayerOrder = []
     if(m_playerCount == 4):
@@ -250,7 +266,9 @@ def main():
     s.bind(('', PORT))
 
     # start new thread for listening to messages
+    
     _thread.start_new_thread(handle_messages, (s,))
+    _thread.start_new_thread(SendButtonToOtherPlayers, (s,))
     _thread.start_new_thread(cleanClients, (s,))
     cleanClients
 
