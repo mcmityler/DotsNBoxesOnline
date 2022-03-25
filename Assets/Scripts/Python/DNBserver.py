@@ -1,5 +1,3 @@
-from email import header
-from re import A
 import socket
 import _thread
 import threading
