@@ -71,6 +71,7 @@ public class SocketManager : MonoBehaviour
         {
             udp.Dispose();
             heartbeating = false;//stop heartbeat
+            //Should send player to main menu.. since this means that you dced
         }
     }
 
@@ -94,12 +95,14 @@ public class SocketManager : MonoBehaviour
         if (_multiplayerLobbyReady)
         { //Enough players in lobby, get it ready to play.
             _multiplayerLobbyReady = false;
+            _gameScript.MPSetTurnOrder(_randomTurnOrder); //set random turn order
             _menuScript.StartMPGame(); //hide menus so you can see game board
             _gameScript.StartMultiplayerGameBoard(); //display game board and hide board settings
             _multiplayerGameStarted = true; //game has started
             if (_currentGamestate == GAMESTATE.HOSTSCREEN || _currentGamestate == GAMESTATE.JOINSCREEN)
             {
                 _menuScript.LobbyKeyScreenToggle();
+                Debug.Log("toggle screen");
             }
             _currentGamestate = GAMESTATE.PLAYINGMULTIPLAYER;
             _gameScript.SetGSGameState(_currentGamestate.ToString());
@@ -216,6 +219,7 @@ public class SocketManager : MonoBehaviour
         //handle message you recieved.
         HandleMessagePayload(returnData);
     }
+    int[] _randomTurnOrder;
     void HandleMessagePayload(string data)
     { //recieved message from server now process it.
         Debug.Log("Got Message: " + data);
@@ -291,10 +295,12 @@ public class SocketManager : MonoBehaviour
                 StartGameServerMessage startGamePayload = JsonUtility.FromJson<StartGameServerMessage>(data); //convert data from base class to result class
                 if (startGamePayload.startGame == 1)
                 { //start game
-                    Debug.Log("StartGame!");
+                
                     
-                    _gameScript.MPSetTurnOrder(startGamePayload.RandomOrder); //set random turn order
+                    _randomTurnOrder = startGamePayload.RandomOrder;
+                    Debug.Log("StartGame!");
                     _multiplayerLobbyReady = true;
+                    
 
                 }
                 //gmScript.FillClientDetails(newClientPayload.players[0].id, newClientPayload.players[0].lobbyID);//tell client what its own ID is and what lobby it is in
@@ -334,7 +340,9 @@ public class SocketManager : MonoBehaviour
                         replay = 1 //tells server yes (1 = true since python doesnt have booleans)
                     };
                     var replayData = Encoding.ASCII.GetBytes(JsonUtility.ToJson(replayPayload)); //convert payload to transmittable data.(json file)
-                    udp.Send(replayData, replayData.Length); //send data to server you connected to in start func.
+                    if(udp != null){
+                        udp.Send(replayData, replayData.Length); //send data to server you connected to in start func.
+                    }
                     break;
                 case "HOSTDNBGAME":
                     m_lobbykeyMessage = true;
@@ -353,7 +361,9 @@ public class SocketManager : MonoBehaviour
                 header = m_tempmessagetype
             };
             var data = Encoding.ASCII.GetBytes(JsonUtility.ToJson(payload)); //convert payload to transmittable data.(json file)
-            udp.Send(data, data.Length); //send data to server you connected to in start func. 
+            if(udp != null){
+                udp.Send(data, data.Length); //send data to server you connected to in start func. 
+            }
         }
 
         if (m_lobbykeyMessage)
@@ -368,7 +378,9 @@ public class SocketManager : MonoBehaviour
             };
             Debug.Log(payload.SizeofBoard);
             var data = Encoding.ASCII.GetBytes(JsonUtility.ToJson(payload)); //convert payload to transmittable data.(json file)
-            udp.Send(data, data.Length); //send data to server you connected to in start func. 
+            if(udp != null){
+                udp.Send(data, data.Length); //send data to server you connected to in start func. 
+            }
         }
 
     }
@@ -411,7 +423,9 @@ public class SocketManager : MonoBehaviour
                 header = socketMessagetype.HEARTBEAT,
             };
             var data = Encoding.ASCII.GetBytes(JsonUtility.ToJson(payload));
-            udp.Send(data, data.Length);
+            if(udp != null){
+                udp.Send(data, data.Length);
+            }
 
         }
         Debug.Log("beating");
@@ -455,7 +469,9 @@ public class SocketManager : MonoBehaviour
             buttonName = m_bName //send buttons name
         };
         var data = Encoding.ASCII.GetBytes(JsonUtility.ToJson(payload)); //convert payload to transmittable data.(json file)
-        udp.Send(data, data.Length); //send data to server you connected to in start func. 
+        if(udp != null){
+            udp.Send(data, data.Length); //send data to server you connected to in start func. 
+        }
     }
     public void RecivedButtonMessage(){
         SendServerPayload("BUTTONRECEIVED", true);
