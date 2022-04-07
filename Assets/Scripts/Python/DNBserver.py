@@ -6,6 +6,8 @@ from enum import IntEnum
 import json
 from datetime import datetime
 import random
+import botocore
+import boto3
 
 
 clients_lock = threading.Lock() #lock for accessing clients so you cant overwrite
@@ -28,6 +30,11 @@ class SocketMessageType(IntEnum):
     HEARTBEAT = 135 #SENT FROM CLIENT TO THE SERVER TO TELL IT THAT THE CLIENT IS STILL CONNECTED
     TIMEDOUT = 136 #SENT FROM SERVER TO CLIENT TO TELL it that it has disconnect / timed out. 
     BUTTONRECEIVED = 137
+    USERAVAILABLE = 138
+    USERTAKEN = 139
+    CREATEACCOUNT = 140
+    LOGINACCOUNT = 141 
+    LOGINFAILED = 142
 
 def cleanClients(sock): #check if there are any clients to disconnect
     while True:
@@ -49,7 +56,7 @@ def cleanClients(sock): #check if there are any clients to disconnect
         
         time.sleep(1)
 
-def SendTimeoutMessage(sock: socket.socket , playerInLobby):
+def SendTimeoutMessage(sock, playerInLobby):
     clients[playerInLobby]['replay'] = 0 #reset replay incase player timesout after game and you already clicked reset
     print("other player in lobby timed out... now do what I need to")
     timedoutPayload = {} #dictionary
@@ -62,15 +69,15 @@ def SendTimeoutMessage(sock: socket.socket , playerInLobby):
 
 
 # -----------listen for messages from server..-----------------------
-def handle_messages(sock: socket.socket):
+def handle_messages(sock):
     print("listening to messages on new thread")
     while True:
-
+        
         data, addr = sock.recvfrom(1024)
         data = str(data.decode("utf-8"))
         data = json.loads(data)
-        if(data['header'] != SocketMessageType.HEARTBEAT): # only print messages that arent the heart beat
-            print(f'Recieved message from {addr}: {data}')
+        #if(data['header'] != SocketMessageType.HEARTBEAT): # only print messages that arent the heart beat
+           # print(f'Recieved message from {addr}: {data}')
 
         #payload = "guess recieved"
         #payload = bytes(payload.encode("utf-8"))
@@ -132,6 +139,10 @@ def handle_messages(sock: socket.socket):
                             message = {"header": 133, "RandomOrder": m_randomPlayerOrder} #send message telling game to restart
                             m = json.dumps(message)
                             sock.sendto(bytes(m, 'utf8'), c)
+            if(data['header'] == SocketMessageType.CREATEACCOUNT):
+                CreateAccount(addr, data, sock)
+            if(data['header'] == SocketMessageType.LOGINACCOUNT):
+                LoginAccount(addr, data, sock)
 
 
 
@@ -158,6 +169,76 @@ def handle_messages(sock: socket.socket):
                 #SendTimeoutMessage(sock, addr)
 
         clients_lock.release()
+
+dynamodb = boto3.resource('dynamodb', 
+         aws_access_key_id='AKIAXD3VAI4OF5HTNE5C',
+         aws_secret_access_key= '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',region_name='us-east-1') # dynamodb access, passed it credentials (to account 'IAM') and region is the same one as AWS account
+table = dynamodb.Table('DNBTable') #get access to table im working with
+def CreateAccount(m_addr, m_data, m_sock):
+    #check if the account exists in the dynamodb...
+    #print(dynamodb.list_tables())
+    userID = m_data['UserID']
+    passwordID = m_data['PasswordID']
+    response = table.get_item(
+        Key={
+            'UserID': userID
+        }
+    )
+    print (response)
+    if('Item' in response):
+        #tell client that user and password is already taken.
+        print("tell client user name is taken")
+        print(response['Item']['PasswordID'])
+        message = {"header": 139 }
+        m = json.dumps(message)
+        m_sock.sendto(bytes(m, 'utf8'), m_addr)
+
+    else:
+        print("tell client account was successfully made")
+        #send message to client to tell it it was made successfully
+        message = {"header": 138 }
+        m = json.dumps(message)
+        m_sock.sendto(bytes(m, 'utf8'), m_addr)
+        #add user and password to the DNBTable
+        table.put_item(
+        Item={
+                'UserID': userID,
+                'PasswordID': passwordID
+            }
+        )
+
+def LoginAccount(m_addr, m_data, m_sock):
+    #check if the account exists in the dynamodb...
+    #print(dynamodb.list_tables())
+    _tempheader = 142
+    userID = m_data['UserID']
+    passwordID = m_data['PasswordID']
+    response = table.get_item(
+        Key={
+            'UserID': userID
+        }
+    )
+    print (response)
+    if('Item' in response):
+        #user exists ... is the password correct?
+        
+        if(response['Item']['PasswordID'] == passwordID):
+            print("tell client user logged in successfully")
+            _tempheader = 141
+        
+        else:
+            print("tell client that the password / user was entered incorrectly (password wrong).")
+            _tempheader = 142
+    else:
+        print("tell client username/password entered incorrect (user doesnt exist)")
+        #send message to client to tell it user/password were incorrect.
+        _tempheader = 142
+
+    message = {"header": _tempheader } #send back to client whether login was successful or not.
+    m = json.dumps(message)
+    m_sock.sendto(bytes(m, 'utf8'), m_addr)
+        
+
 
 def CreateNewLobby(m_addr, m_sock): # create new lobby key that is Unique and not taken already
     m_keytaken = 0
@@ -227,7 +308,7 @@ def SendStartGameMessage( m_addr, m_sock):
                 m = json.dumps(message)
                 m_sock.sendto(bytes(m,'utf8'), (c[0],c[1]))
 
-def SendButtonToOtherPlayers(sock: socket.socket):#send other client buttons that players press
+def SendButtonToOtherPlayers(sock):#send other client buttons that players press
     while True: #make sure it keeps running
         for c in clients:
             if(clients[c]['lobbyKey'] != "null"): # check if you are in a lobby 

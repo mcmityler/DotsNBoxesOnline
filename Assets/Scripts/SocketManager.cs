@@ -18,7 +18,8 @@ public class SocketManager : MonoBehaviour
     [SerializeField] private Text _errorUserPassText; //incorrect text output to show when u&p are wrong or taken
     [SerializeField] private Text _errorLobbyKeyText; //incorrect text output when you enter the wrong lobby key
     private string _errorKeyMessage = ""; //lobby key text
-    bool _correctUandP = false; //was the password and username correct/taken/wrong?
+    bool _correctUandP, _incorrectUandP = false; //was the password and username correct/taken/wrong?
+    bool _UandPNotTaken = false;
     private GameScript _gameScript; //game script reference
     private MenuScript _menuScript; //menu script reference
     [SerializeField] private Text _keyHostText; //Text that displays lobby key when hosting
@@ -54,6 +55,7 @@ public class SocketManager : MonoBehaviour
     private DateTime heartbeatTimer = DateTime.Now; //heartbeat timer for client side before it timesout
     private bool _checklistEmpty = true; //is the checklist empty / should you send a heartbeat since its empty
     private bool _startHeartbeat = false; //start heartbeat in update loop when server gets back connect message.
+    private bool _accounttaken,_accountmade = false;
 
     void Awake()
     {
@@ -75,7 +77,9 @@ public class SocketManager : MonoBehaviour
         }
     }
 
-
+  // -----------------------------------------------------------------------------------------------------------------------------
+  // ------------------------------------------------UPDATE---FUNCTION------------------------------------------------------------
+  // -----------------------------------------------------------------------------------------------------------------------------
     public void Update()
     {
         if (_currentGamestate == GAMESTATE.HOSTSCREEN || _currentGamestate == GAMESTATE.JOINSCREEN)
@@ -180,6 +184,31 @@ public class SocketManager : MonoBehaviour
                 heartbeatTimer = DateTime.Now;
                 InvokeRepeating("HeartBeatMessageToServer", 0, 0.5f);  //send a repeating message to server every second to tell server that client is still connected.
             }
+        }
+        //if the user and password arent taken tell user you successfully created the account..
+        if (_UandPNotTaken)
+        {
+            _UandPNotTaken = false;
+            _errorUserPassText.text = "Account successfully made.";
+        }
+        if(_accounttaken){ //what to do if the username is taken when you are trying to create a new account
+            _accounttaken = false;
+            string _tempString = "Username '" + _usernameInputText.text + "' is taken."; 
+            _errorUserPassText.text = _tempString;
+        }
+        if(_accountmade){ //what to do if the username is taken when you are trying to create a new account
+            _accountmade = false;
+            string _tempString = "Account creation successful!!"; 
+            _errorUserPassText.text = _tempString;
+        }
+        if (_correctUandP)
+        {
+            _correctUandP = false;
+            _menuScript.LobbyMenuSceenButton();
+        }
+        if(_incorrectUandP){
+            _incorrectUandP = false;
+            _errorUserPassText.text = "Username or Password was entered incorrectly";
         }
     }
 
@@ -323,6 +352,22 @@ public class SocketManager : MonoBehaviour
                 //what to do if other player in lobby timed out...
                 _otherPlayerTimedout = true;
                 break;
+            case socketMessagetype.USERTAKEN:
+                //what to do if username you entered was taken on create account.
+                _accounttaken = true;
+                break;
+            case socketMessagetype.USERAVAILABLE:
+                //what to do if username you entered was available on create account.
+                _accountmade = true;
+                break;
+            case socketMessagetype.LOGINACCOUNT:
+                //what to do if username and password were right
+                _correctUandP = true;
+                break;
+            case socketMessagetype.LOGINFAILED:
+                //what to do if username and password were right
+                _incorrectUandP = true;
+                break;
         }
 
     }
@@ -445,17 +490,57 @@ public class SocketManager : MonoBehaviour
         {
             //SEND password and user to server and examine them.
             //Check if user name is in system
-
+            
+            var payload = new LoginCreateAccountMessage
+            { //payload is what you are sending to server.
+                header = socketMessagetype.LOGINACCOUNT, //header tells server what type of message it is.
+                UserID = _tempUserInput,
+                PasswordID = _tempPasswordInput
+            };
+            var data = Encoding.ASCII.GetBytes(JsonUtility.ToJson(payload)); //convert payload to transmittable data.(json file)
+            if(udp != null){
+                udp.Send(data, data.Length); //send data to server you connected to in start func. 
+            }
             //Check if password matches username in system
-            _correctUandP = true;
+            //_correctUandP = true;
             _errorUserPassText.text = ""; //Reset back to nothing once you enter a correct U & P
         }
 
         //if the user and password are correct login...
-        if (_correctUandP)
+       
+
+        playerQuitText.gameObject.SetActive(false); //hide player quit text 
+
+
+    }
+    public void CreateProfileButton() //create account button on Lobby menu screen
+    {
+        _tempPasswordInput = _passwordInputText.text; //get password from password input
+        _tempUserInput = _usernameInputText.text; //get username from username input
+        if (_tempPasswordInput == "" || _tempUserInput == "")//if username or password is left blank display error message
         {
-            _menuScript.LobbyMenuSceenButton();
+            Debug.Log("must enter a username and password");
+            _errorUserPassText.text = "Cannot leave empty";
         }
+        else
+        {
+            //SEND password and user to server and examine them.
+            //Check if username is available
+            var payload = new LoginCreateAccountMessage
+            { //payload is what you are sending to server.
+                header = socketMessagetype.CREATEACCOUNT, //header tells server what type of message it is.
+                UserID = _tempUserInput,
+                PasswordID = _tempPasswordInput
+            };
+            var data = Encoding.ASCII.GetBytes(JsonUtility.ToJson(payload)); //convert payload to transmittable data.(json file)
+            if(udp != null){
+                udp.Send(data, data.Length); //send data to server you connected to in start func. 
+            }
+            //_UandPNotTaken = true;
+            _errorUserPassText.text = ""; //Reset back to nothing once you enter a correct U & P
+        }
+
+        
 
         playerQuitText.gameObject.SetActive(false); //hide player quit text 
 
@@ -554,7 +639,12 @@ public enum socketMessagetype
     REPLAY = 133, //SENT FROM CLIENT TO SERVER to tell sever you want to play the game again with the same players.. Then back from server to client to tell it everyone said yes (if everyone wants to play again)
     HEARTBEAT = 135, //SENT FROM CLIENT TO THE SERVER TO TELL IT THAT THE CLIENT IS STILL CONNECTED
     TIMEDOUT = 136, //SENT FROM SERVER TO CLIENT TO TELL it that it has disconnect / timed out.
-    BUTTONRECEIVED = 137
+    BUTTONRECEIVED = 137,
+    USERAVAILABLE = 138,//SENT FROM SERVER TO CLIENT to tell client that the username was successfully made.
+    USERTAKEN = 139, //SENT FROM SERVER TO CLIENT to tell client that the username was taken.
+    CREATEACCOUNT = 140,
+    LOGINACCOUNT = 141, //SENT FROM SERVER TO CLIENT to tell client login successful // SENT FROM CLIENT TO SERVER to tell server client is trying to log in
+    LOGINFAILED = 142 //SENT FROM SERVER TO CLIENT to tell client login failed
 
 }
 
@@ -598,6 +688,12 @@ class RestartServerMessage : BaseSocketMessage
 class HeartBeatMessage : BaseSocketMessage
 {
 
+}
+[System.Serializable]
+class LoginCreateAccountMessage : BaseSocketMessage
+{
+    public string UserID;
+    public string PasswordID;
 }
 
 [System.Serializable]
