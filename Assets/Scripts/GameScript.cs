@@ -36,6 +36,7 @@ public class GameScript : MonoBehaviour
     private int[] _playerScores = new int[] { 0, 0, 0, 0 }; //player 1-4 scores (how many boxes have they collected)
     private Color32[] _localPlayerColors = new Color32[] { new Color32(0, 90, 188, 255), new Color32(137, 0, 0, 255), new Color32(1, 123, 0, 255), new Color32(209, 197, 0, 255) }; //Local players colors on the board.
     [SerializeField] private Animator _turnOrderAnimator; //turn order animator
+    [SerializeField] private Animator _ingameScoreboardAnimator;
     private int _myPlayerNumberMP = 0; //turn number / what player you are in the lobby
     private int[] _whosTurn = new int[] { 0, 0, 0, 0 }; //holds randomized turn order
     private int _turnRotation = 0; //placeholder for what turn you are currently on
@@ -53,7 +54,9 @@ public class GameScript : MonoBehaviour
         HOSTSCREEN,
         JOINSCREEN,
         PLAYINGMULTIPLAYER,
-        WAITINGRESTART
+        WAITINGRESTART,
+        HELPSCREEN,
+        CREDITSCREEN
     };
 
     private GAMESTATE _currentGamestate = GAMESTATE.STARTMENU; //current gamestate of game
@@ -164,13 +167,14 @@ public class GameScript : MonoBehaviour
         if (_localGame) //if local
         {
             _localNameInputAnimator.SetInteger("PlayerAmount", _numberOfPlayers); //Animate how many player name inputs are visable
-            _turnOrderAnimator.SetInteger("PlayerAmount", _numberOfPlayers);//Animate how many players are shown in turn order
+            
         }
         if(!_localGame) //if multiplayer
         {
-            _turnOrderAnimator.SetInteger("PlayerAmount", _numberOfPlayers);//Animate how many players are shown in turn order
 
         }
+        _turnOrderAnimator.SetInteger("PlayerAmount", _numberOfPlayers);//Animate how many players are shown in turn order
+        _ingameScoreboardAnimator.SetInteger("PlayerCount", _numberOfPlayers);
     }
     public void MinusPlayerButton()
     {
@@ -183,13 +187,14 @@ public class GameScript : MonoBehaviour
         if (_localGame)
         {
             _localNameInputAnimator.SetInteger("PlayerAmount", _numberOfPlayers); //Animate how many player name inputs are visable
-            _turnOrderAnimator.SetInteger("PlayerAmount", _numberOfPlayers);//Animate how many players are shown in turn order
         }
         if(!_localGame) //if multiplayer
         {
-            _turnOrderAnimator.SetInteger("PlayerAmount", _numberOfPlayers);//Animate how many players are shown in turn order
+            
 
         }
+        _turnOrderAnimator.SetInteger("PlayerAmount", _numberOfPlayers);//Animate how many players are shown in turn order
+        _ingameScoreboardAnimator.SetInteger("PlayerCount", _numberOfPlayers);
     }
     public void GameStartButton()//start game button from board setting panel
     {

@@ -45,7 +45,9 @@ public class SocketManager : MonoBehaviour
         HOSTSCREEN,
         JOINSCREEN,
         PLAYINGMULTIPLAYER,
-        WAITINGRESTART
+        WAITINGRESTART,
+        HELPSCREEN,
+        CREDITSCREEN
     };
     private GAMESTATE _currentGamestate = GAMESTATE.STARTMENU; //what is the current gamestate
     private string _lobbyString = "null"; //current lobby string
@@ -56,7 +58,13 @@ public class SocketManager : MonoBehaviour
     private bool _checklistEmpty = true; //is the checklist empty / should you send a heartbeat since its empty
     private bool _startHeartbeat = false; //start heartbeat in update loop when server gets back connect message.
     private bool _accounttaken,_accountmade = false;
-
+    [SerializeField] private GameObject connectionStatusText, lastPingText;
+    [SerializeField] private Text _errorTimedOutClientSideText;
+    private float lastPingCounter = -1;
+    private string _myUserID = "null";
+    [SerializeField] private Text _usernameText;
+    [SerializeField] private GameObject _accountDetailsObj;
+    
     void Awake()
     {
         _gameScript = this.GetComponent<GameScript>();///set reference to gamescript
@@ -73,6 +81,8 @@ public class SocketManager : MonoBehaviour
         {
             udp.Dispose();
             heartbeating = false;//stop heartbeat
+            lastPingCounter = -1;
+            _myUserID = "null";
             //Should send player to main menu.. since this means that you dced
         }
     }
@@ -82,6 +92,9 @@ public class SocketManager : MonoBehaviour
   // -----------------------------------------------------------------------------------------------------------------------------
     public void Update()
     {
+        if(_currentGamestate != GAMESTATE.STARTMENU){ //if you arent on the start menu erase client side timeout error text
+            _errorTimedOutClientSideText.text = "";
+        }
         if (_currentGamestate == GAMESTATE.HOSTSCREEN || _currentGamestate == GAMESTATE.JOINSCREEN)
         { //if you are in host/keylobby screen
             _keyHostText.text = "Lobby Key: " + _lobbyString;
@@ -89,6 +102,7 @@ public class SocketManager : MonoBehaviour
         if (_currentGamestate == GAMESTATE.LOBBYMENU)
         { //if you are in the lobby menu
             _errorLobbyKeyText.text = _errorKeyMessage;
+            
         }
         if (_joinedGame)
         {
@@ -161,7 +175,11 @@ public class SocketManager : MonoBehaviour
         {
             _recievedHeartbeat = false;
             heartbeatTimer = DateTime.Now;
-
+            lastPingCounter = 0;
+        }
+        if(heartbeating){
+            lastPingCounter += Time.deltaTime;
+            
         }
         if ((DateTime.Now - heartbeatTimer).TotalSeconds > 35 && heartbeating)
         {
@@ -172,7 +190,8 @@ public class SocketManager : MonoBehaviour
             _menuScript.TimedoutMPGame(); //show main menu
             _gameScript.StopMultiplayerGameBoard(); //display game board and show board settings
             OnDestroy();
-            print("timed out client side");
+            _errorTimedOutClientSideText.text = "Client timed out, Unable to connect to server\nPlease try again soon...";
+            Debug.Log("timed out client side");
         }
         if (_startHeartbeat)
         {
@@ -210,6 +229,15 @@ public class SocketManager : MonoBehaviour
             _incorrectUandP = false;
             _errorUserPassText.text = "Username or Password was entered incorrectly";
         }
+        if(_myUserID != "null"){
+            _usernameText.text = _myUserID;
+            _accountDetailsObj.SetActive(true); 
+        }
+        if(_myUserID == "null"){
+            _accountDetailsObj.SetActive(false); 
+        }
+        
+        UpdateConnectStatus();
     }
 
 
@@ -363,6 +391,8 @@ public class SocketManager : MonoBehaviour
             case socketMessagetype.LOGINACCOUNT:
                 //what to do if username and password were right
                 _correctUandP = true;
+                LoginCreateAccountMessage loginpayload = JsonUtility.FromJson<LoginCreateAccountMessage>(data);
+                _myUserID = loginpayload.UserID;
                 break;
             case socketMessagetype.LOGINFAILED:
                 //what to do if username and password were right
@@ -473,7 +503,7 @@ public class SocketManager : MonoBehaviour
             }
 
         }
-        Debug.Log("beating");
+        Debug.Log("heartbeating message");
 
     }
 
@@ -620,6 +650,24 @@ public class SocketManager : MonoBehaviour
         _gameScript.HideScoreBoard();
         SendServerPayload("REPLAY", false);
     }
+    private void UpdateConnectStatus(){
+        lastPingText.GetComponent<Text>().text = lastPingCounter.ToString() + " Seconds";
+        if(lastPingCounter == -1 || lastPingCounter > 15 && lastPingCounter < 30){
+            //the heart hasnt connected to the server yet
+            connectionStatusText.GetComponent<Text>().text = "Pending...";
+            connectionStatusText.GetComponent<Text>().color = Color.yellow;
+        }
+        if(lastPingCounter < 15 && lastPingCounter > 0){
+            //the heart is connected and alive
+            connectionStatusText.GetComponent<Text>().text = "Connected!";
+            connectionStatusText.GetComponent<Text>().color = Color.green;
+        }
+        if(lastPingCounter >= 30){
+            //the heart message isnt coming back from the server for long enough
+            connectionStatusText.GetComponent<Text>().text = "Disconnected!";
+            connectionStatusText.GetComponent<Text>().color = Color.red;
+        }
+    }
 
 }
 public enum socketMessagetype
@@ -685,7 +733,7 @@ class RestartServerMessage : BaseSocketMessage
     public int[] RandomOrder;
 }
 [System.Serializable]
-class HeartBeatMessage : BaseSocketMessage
+class Login : BaseSocketMessage
 {
 
 }

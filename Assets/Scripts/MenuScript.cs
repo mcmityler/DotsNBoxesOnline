@@ -6,7 +6,7 @@ public class MenuScript : MonoBehaviour
 {
     private GameScript _gameScript; //reference to gamescript
     private SocketManager _socketManager;
-    [SerializeField] private GameObject _mainMenuObj, _helpScreenObj, _creditScreenObj, _loginScreenObj, _lobbyMenuSceenScreenObj, _myAccountScreenObj, _keyLobbyObj, _pauseMenuObj; //reference to screen objects to in/visable
+    [SerializeField] private GameObject _mainMenuObj, _helpScreenObj, _creditScreenObj, _loginScreenObj, _lobbyMenuSceenScreenObj, _myAccountScreenObj, _keyLobbyObj, _pauseMenuObj, _connectionObj; //reference to screen objects to in/visable
     private bool _myAccountScreenVisable,_keyLobbyVisable, _pauseMenuVisable = false; //bool to control screen visability toggle (so i can use the same func for back button and my account button)
 
     void Awake(){
@@ -27,16 +27,21 @@ public class MenuScript : MonoBehaviour
     public void HelpScreenButton()//called by help button on main menu
     {
         _helpScreenObj.SetActive(true);
+        _socketManager.SetSOCKETGameState("HELPSCREEN");
+        _gameScript.SetGSGameState("HELPSCREEN");
     }
     public void CreditScreenButton()//called by credit button on main menu
     {
         _creditScreenObj.SetActive(true);
+        _socketManager.SetSOCKETGameState("CREDITSCREEN");
+        _gameScript.SetGSGameState("CREDITSCREEN");
     }
     public void MultiplayerScreenButton()//called by multiplayer button on main menu
     {
         _loginScreenObj.SetActive(true);
         _gameScript.SetLocalGame(false); //tell gamescript its a multiplayer game
         _socketManager.startUDP(); //Start UDP to connect to AWS
+        _connectionObj.SetActive(true);
     }
     public void BacktoMainButton()//called by back buttons on every screen ==> goes to main menu.
     {
@@ -44,7 +49,8 @@ public class MenuScript : MonoBehaviour
         _helpScreenObj.SetActive(false);
         _loginScreenObj.SetActive(false);
         _lobbyMenuSceenScreenObj.SetActive(false);
-        
+        _connectionObj.SetActive(false);
+
         _mainMenuObj.SetActive(true);
 
         _socketManager.OnDestroy(); //destroy UDP if it is running and you go back to main menu
@@ -84,6 +90,7 @@ public class MenuScript : MonoBehaviour
         _loginScreenObj.SetActive(true);
     }
     public void TimedoutMPGame(){
+        _connectionObj.SetActive(false);
         _mainMenuObj.SetActive(true);
         _loginScreenObj.SetActive(false);
     }
