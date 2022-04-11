@@ -12,7 +12,9 @@ public class BoxScript : MonoBehaviour
     public void ButtonSurrounded(int m_whosTurn, Color32 m_turnColor){
         //change obj tag
         gameObject.tag = "checked";
-        gameObject.GetComponent<Image>().color = m_turnColor;
+       
+        gameObject.GetComponentInChildren<Image>().color = m_turnColor;
+        
         //change colour of obj depending on players turn
         /*if(m_whosTurn == 1){ //First player turn
 

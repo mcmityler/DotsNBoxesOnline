@@ -11,7 +11,7 @@ public class GameScript : MonoBehaviour
     //----------------------------VARIABLES-------------------------------------
     private SocketManager _socketManager; //ref to socket manager script 
     [Range(2.0F, 8.0F)][SerializeField] private int _boardSize = 4; //Board size in game, (ie 4x4, max it can go is 8x8 before it goes off screen) (range is what shows in the slider 2-8)
-    public Button cornerButton; //Prefab for buttons that surround the box
+    public GameObject cornerButtonObj; //Prefab for buttons that surround the box
     public GameObject box; //Prefab of center of buttons aka box. Also hold what buttons surround it and need to be pressed to change its color.
     private GameObject _canvas; //Canvas obj (where all the UI is)
     [SerializeField] private GameObject _backgroundObj; //Background panel of the entire canvas (also where the gameboard is drawn)
@@ -232,10 +232,11 @@ public class GameScript : MonoBehaviour
             for (int i = 0; i < _boardSize; i++)
             {
                 //create dictionary of ROW of buttons and set their placement, name, and other
-                Button rButton = Instantiate(cornerButton, Vector3.zero, Quaternion.identity) as Button; //make new rButton from prefab
-                var rectTransformRow = rButton.GetComponent<RectTransform>(); //get reference of buttons rectTransformRow
+                GameObject rButtonObj = Instantiate(cornerButtonObj, Vector3.zero, Quaternion.identity) as GameObject; //make new rButton from prefab
+                Button rButton = rButtonObj.GetComponentInChildren<Button>();
+                var rectTransformRow = rButtonObj.GetComponent<RectTransform>(); //get reference of buttons rectTransformRow
                 rectTransformRow.SetParent(_backgroundObj.transform); //make rButton child of background panel obj
-                rectTransformRow.sizeDelta = new Vector2(82, 20); //set buttons size
+                rButton.GetComponent<RectTransform>().sizeDelta = new Vector2(82, 20); //set buttons size
                 //set buttons position on background panel obj
                 rectTransformRow.position = new Vector2(_backgroundObj.GetComponent<RectTransform>().rect.width / 2 + (_boardSize / 2 * 80) - i * 80, _backgroundObj.GetComponent<RectTransform>().rect.height / 2 + (_boardSize / 2 * 80) + 35 - b * 80);
                 rButton.name = (b.ToString() + i.ToString() + "r"); //set name of rButton
@@ -245,10 +246,11 @@ public class GameScript : MonoBehaviour
 
 
                 //create dictionary of COLUMNS of buttons and set their placement, name, and other (reversed b & i)**********
-                Button cButton = Instantiate(cornerButton, Vector3.zero, Quaternion.identity) as Button; //make new cButton from prefab
-                var rectTransformCol = cButton.GetComponent<RectTransform>(); //get reference of buttons rectTransformCol
+                GameObject cButtonObj = Instantiate(cornerButtonObj, Vector3.zero, Quaternion.identity) as GameObject; //make new cButton from prefab
+                Button cButton = cButtonObj.GetComponentInChildren<Button>();
+                var rectTransformCol = cButtonObj.GetComponent<RectTransform>(); //get reference of buttons rectTransformCol
                 rectTransformCol.SetParent(_backgroundObj.transform);//make cButton child of canvas
-                rectTransformCol.sizeDelta = new Vector2(82, 20); //set buttons size
+                cButton.GetComponent<RectTransform>().sizeDelta = new Vector2(82, 20); //set buttons size
                 //set buttons position on canvas
                 rectTransformCol.position = new Vector2(_backgroundObj.GetComponent<RectTransform>().rect.width / 2 + (_boardSize / 2 * 80) + 35 - b * 80, _backgroundObj.GetComponent<RectTransform>().rect.height / 2 + (_boardSize / 2 * 80) - i * 80);
                 //set rotation of buttons.
@@ -338,28 +340,34 @@ public class GameScript : MonoBehaviour
             }
             if (!m_alreadyClicked)//if button hasnt been clicked then change the buttons colour and check if the box needs to be filled in.
             {
-
+                m_b.GetComponentInParent<Animator>().SetBool("Pressed", true);
+                m_b.gameObject.SetActive(false);
+                
                 if (_whosTurn[_turnRotation] == 1)
                 {//FIRST PLAYER
+                    m_b.GetComponentInParent<Transform>().Find("Image").gameObject.GetComponent<Image>().color = Color.blue;
                     m_b.GetComponent<Image>().color = Color.blue;
                 }
                 else if (_whosTurn[_turnRotation] == 2)
                 {//SECOND PLAYER
+                     m_b.GetComponentInParent<Transform>().Find("Image").gameObject.GetComponent<Image>().color = Color.red;
                     m_b.GetComponent<Image>().color = Color.red;
                 }
                 else if (_whosTurn[_turnRotation] == 3)
                 {//THIRD PLAYER
+                 m_b.GetComponentInParent<Transform>().Find("Image").gameObject.GetComponent<Image>().color = Color.green;
                     m_b.GetComponent<Image>().color = Color.green;
                 }
                 else if (_whosTurn[_turnRotation] == 4)
                 {//FOURTH PLAYER
+                 m_b.GetComponentInParent<Transform>().Find("Image").gameObject.GetComponent<Image>().color = Color.yellow;
                     m_b.GetComponent<Image>().color = Color.yellow;
                 }
                 // m_b.GetComponent<Image>().color = _localPlayerColors[_whosTurn[_turnRotation]-1];
-                ColorBlock m_tempColor = m_b.GetComponent<Button>().colors; //make temporary color block to change alpha of button to 100%
-                m_tempColor.normalColor = m_b.GetComponent<Image>().color; //set normal color to what color button should be.
-                m_b.GetComponent<Button>().colors = m_tempColor; //set buttons color block to temp color block
-
+                //ColorBlock m_tempColor = m_b.GetComponent<Button>().colors; //make temporary color block to change alpha of button to 100%
+                //m_tempColor.normalColor = m_b.GetComponent<Image>().color; //set normal color to what color button should be.
+                //m_b.GetComponent<Button>().colors = m_tempColor; //set buttons color block to temp color block
+                
                 CheckBoxes(); //check if box needs to be filled in. (check if it is surrounded by 4 pressed buttons)
 
                 if (!_localGame && _youPressed) //if multi AND you pressed button send to other players
