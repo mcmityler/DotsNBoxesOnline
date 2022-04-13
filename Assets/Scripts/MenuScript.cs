@@ -45,6 +45,8 @@ public class MenuScript : MonoBehaviour
     }
     public void BacktoMainButton()//called by back buttons on every screen ==> goes to main menu.
     {
+        _socketManager.SetSOCKETGameState("STARTMENU");
+        _gameScript.SetGSGameState("STARTMENU");
         _creditScreenObj.SetActive(false);
         _helpScreenObj.SetActive(false);
         _loginScreenObj.SetActive(false);
@@ -57,6 +59,7 @@ public class MenuScript : MonoBehaviour
     }
     public void QuitButton()//called by quit button on main menu / lobby menu
     {
+        _socketManager.ExitGameButton();
         Application.Quit();
     }
     public void LobbyMenuSceenButton()//called by multiplayer button on main menu 

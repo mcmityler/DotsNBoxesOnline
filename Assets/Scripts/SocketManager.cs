@@ -252,7 +252,7 @@ public class SocketManager : MonoBehaviour
             _accountDetailsObj.SetActive(false); 
         }
     }
-
+    
     public void startUDP() //start UDP and connect to server.
     {
         udp = new UdpClient(); //create new udp client
@@ -458,6 +458,7 @@ public class SocketManager : MonoBehaviour
             };
             var data = Encoding.ASCII.GetBytes(JsonUtility.ToJson(payload)); //convert payload to transmittable data.(json file)
             if(udp != null){
+                Debug.Log(m_messageType);
                 udp.Send(data, data.Length); //send data to server you connected to in start func. 
             }
         }
@@ -527,7 +528,12 @@ public class SocketManager : MonoBehaviour
         Debug.Log("heartbeating message");
 
     }
-
+    public void ExitGameButton(){
+        if(_currentGamestate == GAMESTATE.PLAYINGMULTIPLAYER){
+            
+            SendServerPayload("PLAYERQUIT", true);
+        }
+    }
     public void LoginButton() //login button on Lobby menu screen
     {
         _tempPasswordInput = _passwordInputText.text; //get password from password input
