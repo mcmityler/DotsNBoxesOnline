@@ -19,7 +19,7 @@ public class SocketManager : MonoBehaviour
     [SerializeField] private Text _errorLobbyKeyText; //incorrect text output when you enter the wrong lobby key
     private string _errorKeyMessage = ""; //lobby key text
     bool _correctUandP, _incorrectUandP = false; //was the password and username correct/taken/wrong?
-    bool _UandPNotTaken = false;
+    
     private GameScript _gameScript; //game script reference
     private MenuScript _menuScript; //menu script reference
     [SerializeField] private Text _keyHostText; //Text that displays lobby key when hosting
@@ -65,6 +65,8 @@ public class SocketManager : MonoBehaviour
     [SerializeField] private Text _usernameText;
     [SerializeField] private GameObject _accountDetailsObj;
     
+    [SerializeField] Toggle _passwordVisibility;
+    
     void Awake()
     {
         _gameScript = this.GetComponent<GameScript>();///set reference to gamescript
@@ -86,12 +88,16 @@ public class SocketManager : MonoBehaviour
             //Should send player to main menu.. since this means that you dced
         }
     }
-
   // -----------------------------------------------------------------------------------------------------------------------------
   // ------------------------------------------------UPDATE---FUNCTION------------------------------------------------------------
   // -----------------------------------------------------------------------------------------------------------------------------
     public void Update()
     {
+        if( _passwordVisibility.isOn){
+           _passwordInputText.contentType = InputField.ContentType.Password;
+       }else{
+           _passwordInputText.contentType = InputField.ContentType.Standard;
+       }
         if(_currentGamestate != GAMESTATE.STARTMENU){ //if you arent on the start menu erase client side timeout error text
             _errorTimedOutClientSideText.text = "";
         }
@@ -113,6 +119,7 @@ public class SocketManager : MonoBehaviour
         if (_multiplayerLobbyReady)
         { //Enough players in lobby, get it ready to play.
             _multiplayerLobbyReady = false;
+            _gameScript.UpdateMPUsernames(_userList);
             _gameScript.MPSetTurnOrder(_randomTurnOrder); //set random turn order
             _menuScript.StartMPGame(); //hide menus so you can see game board
             _gameScript.StartMultiplayerGameBoard(); //display game board and hide board settings
@@ -181,7 +188,7 @@ public class SocketManager : MonoBehaviour
             lastPingCounter += Time.deltaTime;
             
         }
-        if ((DateTime.Now - heartbeatTimer).TotalSeconds > 35 && heartbeating)
+        if ((DateTime.Now - heartbeatTimer).TotalSeconds > 15 && heartbeating)
         {
             _lobbyString = "null"; //set lobby to null
             _currentGamestate = GAMESTATE.STARTMENU; //go back to lobbymenu gamestate
@@ -204,12 +211,14 @@ public class SocketManager : MonoBehaviour
                 InvokeRepeating("HeartBeatMessageToServer", 0, 0.5f);  //send a repeating message to server every second to tell server that client is still connected.
             }
         }
-        //if the user and password arent taken tell user you successfully created the account..
-        if (_UandPNotTaken)
-        {
-            _UandPNotTaken = false;
-            _errorUserPassText.text = "Account successfully made.";
+        if(lastPingCounter == -1 && _currentGamestate == GAMESTATE.LOGINREGISTER){
+            SendServerPayload("CONNECTDNB", true);
         }
+        LoginRegisterUpdateLoop();
+        UpdateConnectStatus();
+    }
+    void LoginRegisterUpdateLoop(){
+        //if the user and password arent taken tell user you successfully created the account..
         if(_accounttaken){ //what to do if the username is taken when you are trying to create a new account
             _accounttaken = false;
             string _tempString = "Username '" + _usernameInputText.text + "' is taken."; 
@@ -223,7 +232,13 @@ public class SocketManager : MonoBehaviour
         if (_correctUandP)
         {
             _correctUandP = false;
-            _menuScript.LobbyMenuSceenButton();
+            if(_myUserID != "null"){
+                
+                _menuScript.LobbyMenuSceenButton();
+            }
+            else{
+                _errorUserPassText.text = "Already logged in, wait 15 seconds and try again";
+            }
         }
         if(_incorrectUandP){
             _incorrectUandP = false;
@@ -236,10 +251,7 @@ public class SocketManager : MonoBehaviour
         if(_myUserID == "null"){
             _accountDetailsObj.SetActive(false); 
         }
-        
-        UpdateConnectStatus();
     }
-
 
     public void startUDP() //start UDP and connect to server.
     {
@@ -277,6 +289,7 @@ public class SocketManager : MonoBehaviour
         HandleMessagePayload(returnData);
     }
     int[] _randomTurnOrder;
+    string[] _userList;
     void HandleMessagePayload(string data)
     { //recieved message from server now process it.
         Debug.Log("Got Message: " + data);
@@ -353,8 +366,12 @@ public class SocketManager : MonoBehaviour
                 if (startGamePayload.startGame == 1)
                 { //start game
                 
+                    //Players usernames are passed through as a userlist from server when the game starts.
+                    Debug.Log(startGamePayload.UserList.ToString());
                     
+                    //From here i need to use the user list to populate the user names in the gamescript
                     _randomTurnOrder = startGamePayload.RandomOrder;
+                    _userList = startGamePayload.UserList;
                     Debug.Log("StartGame!");
                     _multiplayerLobbyReady = true;
                     
@@ -397,6 +414,10 @@ public class SocketManager : MonoBehaviour
             case socketMessagetype.LOGINFAILED:
                 //what to do if username and password were right
                 _incorrectUandP = true;
+                break;
+             case socketMessagetype.ALREADYLOGGEDIN:
+                //what to do if username and password were right
+                _correctUandP = true;
                 break;
         }
 
@@ -515,6 +536,9 @@ public class SocketManager : MonoBehaviour
         {
             Debug.Log("must enter a username and password");
             _errorUserPassText.text = "Cannot leave empty";
+        }
+        else if(lastPingCounter == -1){
+            _errorUserPassText.text = "Not connected to server";
         }
         else
         {
@@ -652,17 +676,17 @@ public class SocketManager : MonoBehaviour
     }
     private void UpdateConnectStatus(){
         lastPingText.GetComponent<Text>().text = lastPingCounter.ToString() + " Seconds";
-        if(lastPingCounter == -1 || lastPingCounter > 15 && lastPingCounter < 30){
+        if(lastPingCounter == -1 || lastPingCounter > 8 && lastPingCounter < 12){
             //the heart hasnt connected to the server yet
             connectionStatusText.GetComponent<Text>().text = "Pending...";
             connectionStatusText.GetComponent<Text>().color = Color.yellow;
         }
-        if(lastPingCounter < 15 && lastPingCounter > 0){
+        if(lastPingCounter < 8 && lastPingCounter > 0){
             //the heart is connected and alive
             connectionStatusText.GetComponent<Text>().text = "Connected!";
             connectionStatusText.GetComponent<Text>().color = Color.green;
         }
-        if(lastPingCounter >= 30){
+        if(lastPingCounter >= 12){
             //the heart message isnt coming back from the server for long enough
             connectionStatusText.GetComponent<Text>().text = "Disconnected!";
             connectionStatusText.GetComponent<Text>().color = Color.red;
@@ -692,8 +716,8 @@ public enum socketMessagetype
     USERTAKEN = 139, //SENT FROM SERVER TO CLIENT to tell client that the username was taken.
     CREATEACCOUNT = 140,
     LOGINACCOUNT = 141, //SENT FROM SERVER TO CLIENT to tell client login successful // SENT FROM CLIENT TO SERVER to tell server client is trying to log in
-    LOGINFAILED = 142 //SENT FROM SERVER TO CLIENT to tell client login failed
-
+    LOGINFAILED = 142, //SENT FROM SERVER TO CLIENT to tell client login failed
+    ALREADYLOGGEDIN = 143 //SENT FROM SERVER TO CLIENT to tell client that that account is already logged in on.
 }
 
 [System.Serializable]
@@ -721,6 +745,7 @@ class StartGameServerMessage : BaseSocketMessage
 {
     public int startGame;
     public int[] RandomOrder;
+    public string[] UserList;
 }
 [System.Serializable]
 class RestartClientMessage : BaseSocketMessage

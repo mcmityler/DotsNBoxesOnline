@@ -29,7 +29,7 @@ public class GameScript : MonoBehaviour
     [SerializeField] private Animator _endgameScoreAnimator; //animator on engame score screen (changes size of scorebox depending on how many players)
     [SerializeField] private Text[] _playerNameTextboxes; //player 1-4 name text boxes in score (during game score screen.)
     [SerializeField] private InputField[] _localPlayerNameInput; //player 1-4 name input for local games
-    private string[] _localPlayerNames = new string[] { "Player 1", "Player 2", "Player 3", "Player 4" }; //player 1-4 local names.
+    private string[] _playerNames = new string[] { "Player 1", "Player 2", "Player 3", "Player 4" }; //player 1-4 local names.
     [SerializeField] private Animator _localNameInputAnimator; //local name input animator (changes how many names on local input screen)
     private int _numberOfPlayers = 2; //how many players are allowed in your lobby
     private bool _localGame = true; //are you playing a local game 
@@ -127,9 +127,9 @@ public class GameScript : MonoBehaviour
             _playerScores[i] = 0; //set scores to 0
             _playerScoreTextboxes[i].text = _playerScores[i].ToString(); //display scores in text box
             if(!_localGame && m_resetNames){
-                _localPlayerNames[i] = "Player " + (i+1).ToString();
+                _playerNames[i] = "Player " + (i+1).ToString();
             }
-            _playerTurnOrderText[i].text = _localPlayerNames[i]; //reset names of text boxes in the turn order so when it resets its back to players 1-4 in correct order
+            _playerTurnOrderText[i].text = _playerNames[i]; //reset names of text boxes in the turn order so when it resets its back to players 1-4 in correct order
             _playerTurnOrderText[i].color = _localPlayerColors[i]; //reset color of turn order text boxes ^^
             
         }
@@ -212,8 +212,8 @@ public class GameScript : MonoBehaviour
                 if (_localPlayerNameInput[i].text != "")
                 {  //check names arent left blank
 
-                    _localPlayerNames[i] = _localPlayerNameInput[i].text; //display name in text box
-                    _playerNameTextboxes[i].text = _localPlayerNames[i] + ": "; //display names in current score screen.
+                    _playerNames[i] = _localPlayerNameInput[i].text; //display name in text box
+                    _playerNameTextboxes[i].text = _playerNames[i] + ": "; //display names in current score screen.
                 }
                 ArrangeTurnOrder(i); //Arrange text and color of text boxes in bottom left
             }
@@ -222,8 +222,18 @@ public class GameScript : MonoBehaviour
     }
     private void ArrangeTurnOrder(int m_turnOrder) //change names and color in turn order
     {
-        _playerTurnOrderText[m_turnOrder].text = _localPlayerNames[(_whosTurn[m_turnOrder]) - 1]; //Change text to correct name
+        _playerTurnOrderText[m_turnOrder].text = _playerNames[(_whosTurn[m_turnOrder]) - 1]; //Change text to correct name
         _playerTurnOrderText[m_turnOrder].color = _localPlayerColors[(_whosTurn[m_turnOrder]) - 1]; //Change color of text box to players color
+    }
+    public void UpdateMPUsernames(string[] m_userList){
+        
+        int m_counter = 0;
+        foreach(string s in m_userList){
+            _playerNames[m_counter] = m_userList[m_counter];
+            _playerNameTextboxes[m_counter].text = _playerNames[m_counter] + ": ";
+            //count after you do what you want 
+            m_counter++;
+        }
     }
     private void CreateGame() //create game board
     {
@@ -340,6 +350,7 @@ public class GameScript : MonoBehaviour
             }
             if (!m_alreadyClicked)//if button hasnt been clicked then change the buttons colour and check if the box needs to be filled in.
             {
+                m_b.GetComponentInParent<AudioSource>().Play();
                 m_b.GetComponentInParent<Animator>().SetBool("Pressed", true);
                 m_b.gameObject.SetActive(false);
                 
@@ -531,31 +542,31 @@ public class GameScript : MonoBehaviour
         //check that you have a player in first (if 4 player)
         if (m_firstPlace != -1)
         {
-            _endgameScoreTextboxes[m_ctr].text = _localPlayerNames[m_firstPlace] + "      Boxes: " + _playerScores[m_firstPlace];
-            _winnerText.text = _localPlayerNames[m_firstPlace] + " is the Winner!";
+            _endgameScoreTextboxes[m_ctr].text = _playerNames[m_firstPlace] + "      Boxes: " + _playerScores[m_firstPlace];
+            _winnerText.text = _playerNames[m_firstPlace] + " is the Winner!";
             m_ctr++;
         }
         foreach (int second in m_secondPlace) //cycle through anyplayers that tied for second
         {
-            _endgameScoreTextboxes[m_ctr].text = _localPlayerNames[second] + "      Boxes: " + _playerScores[second];
+            _endgameScoreTextboxes[m_ctr].text = _playerNames[second] + "      Boxes: " + _playerScores[second];
             if (m_firstPlace == -1 && m_secondPlace.Count == 1)
             {
-                _winnerText.text = _localPlayerNames[second] + " is the Winner!";
+                _winnerText.text = _playerNames[second] + " is the Winner!";
             }
             m_ctr++;
         }
         foreach (int third in m_thirdPlace)//cycle through anyplayers that tied for third
         {
-            _endgameScoreTextboxes[m_ctr].text = _localPlayerNames[third] + "      Boxes: " + _playerScores[third];
+            _endgameScoreTextboxes[m_ctr].text = _playerNames[third] + "      Boxes: " + _playerScores[third];
             if (m_secondPlace.Count == 0 && m_thirdPlace.Count == 1)
             {
-                _winnerText.text = _localPlayerNames[third] + " is the Winner!";
+                _winnerText.text = _playerNames[third] + " is the Winner!";
             }
             m_ctr++;
         }
         foreach (int fourth in m_fourthPlace)//cycle through anyplayers that tied for fourth
         {
-            _endgameScoreTextboxes[m_ctr].text = _localPlayerNames[fourth] + "      Boxes: " + _playerScores[fourth];
+            _endgameScoreTextboxes[m_ctr].text = _playerNames[fourth] + "      Boxes: " + _playerScores[fourth];
             m_ctr++;
         }
 
