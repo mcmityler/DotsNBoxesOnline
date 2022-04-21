@@ -8,6 +8,7 @@ TagManager:
   - unchecked
   - checked
   - button
+  - ColourButton
   layers:
   - Default
   - TransparentFX

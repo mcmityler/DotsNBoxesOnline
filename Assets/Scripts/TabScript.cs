@@ -1,11 +1,12 @@
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class TabScript : MonoBehaviour
 {
-    [SerializeField] private InputField _usernameInput, _passwordInput;
+    [SerializeField] private TMP_InputField _usernameInput, _passwordInput;
     private int _loginScreenInputCounter = -1;
 
     void Update(){

@@ -39,4 +39,20 @@ public class AudioManager : MonoBehaviour
         }
         s.source.Play();
     }
+
+    public void PlayWithPitch(string name, float pitchNum) //called from other scripts to play audio 
+    {
+        Sound s = Array.Find(sounds, sound => sound.name == name);
+        
+        s.source.volume = s.volume;
+        s.pitch = pitchNum;
+        s.source.pitch = s.pitch;
+        Debug.Log(s.pitch);
+        if(s == null)
+        {
+            Debug.LogWarning("Sound: " + name +" was not found!");
+            return;
+        }
+        s.source.Play();
+    }
 }

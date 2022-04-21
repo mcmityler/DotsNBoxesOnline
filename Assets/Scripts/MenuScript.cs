@@ -1,12 +1,13 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class MenuScript : MonoBehaviour
 {
     private GameScript _gameScript; //reference to gamescript
     private SocketManager _socketManager;
-    [SerializeField] private GameObject _mainMenuObj, _helpScreenObj, _creditScreenObj, _loginScreenObj, _lobbyMenuSceenScreenObj, _myAccountScreenObj, _keyLobbyObj, _pauseMenuObj, _connectionObj; //reference to screen objects to in/visable
+    [SerializeField] private GameObject _mainMenuObj, _helpScreenObj, _creditScreenObj, _loginScreenObj, _lobbyMenuSceenScreenObj, _myAccountScreenObj, _keyLobbyObj, _pauseMenuObj, _connectionObj, _colourScreenObj; //reference to screen objects to in/visable
     private bool _myAccountScreenVisable,_keyLobbyVisable, _pauseMenuVisable = false; //bool to control screen visability toggle (so i can use the same func for back button and my account button)
 
     void Awake(){
@@ -66,13 +67,16 @@ public class MenuScript : MonoBehaviour
     {
         //show lobby menu
         _lobbyMenuSceenScreenObj.SetActive(true);
+        _colourScreenObj.SetActive(false);
+        _myAccountScreenObj.SetActive(false);
         //set gamestates.
         _socketManager.SetSOCKETGameState("LOBBYMENU");
         _gameScript.SetGSGameState("LOBBYMENU");
     }
     public void MyAccountScreenToggle(){ //toggle my account screen visibility
-        _myAccountScreenVisable = !_myAccountScreenVisable;
-        _myAccountScreenObj.SetActive(_myAccountScreenVisable);
+        _myAccountScreenObj.SetActive(true);
+        _socketManager.SetSOCKETGameState("MYACCOUNT");
+        _gameScript.SetGSGameState("MYACCOUNT");
     }
     public void LobbyKeyScreenToggle(){ //toggle lobbyKey screen visibility
         _keyLobbyVisable = !_keyLobbyVisable;
@@ -96,6 +100,22 @@ public class MenuScript : MonoBehaviour
         _connectionObj.SetActive(false);
         _mainMenuObj.SetActive(true);
         _loginScreenObj.SetActive(false);
+    }
+    public void checkmarkSound(Toggle _passwordCheckbox){
+        
+        if(_passwordCheckbox.isOn){
+            FindObjectOfType<AudioManager>().Play("checkSound");
+        }else{
+            FindObjectOfType<AudioManager>().Play("uncheckSound");
+        }
+        _socketManager.PasswordVisibleToggle(_passwordCheckbox);
+    }
+
+    public void ColourScreen(){
+        _colourScreenObj.SetActive(true);
+        _socketManager.SetColourButtonSelected();
+        _socketManager.SetSOCKETGameState("COLOURSCREEN");
+        _gameScript.SetGSGameState("COLOURSCREEN");
     }
 
 }

@@ -5,6 +5,7 @@ using System.Text;
 using System;
 using UnityEngine.UI;
 using System.Collections.Generic;
+using TMPro;
 
 public class SocketManager : MonoBehaviour
 {
@@ -14,12 +15,12 @@ public class SocketManager : MonoBehaviour
     public const int PORT = 12345; //port we are using
     string _tempUserInput = ""; //what was inputed in username textbox
     string _tempPasswordInput = "";//what was inputed in password textbox
-    [SerializeField] private InputField _usernameInputText, _passwordInputText, _lobbyKeyInput; //user and pass input // lobbyKey input
+    [SerializeField] private TMP_InputField _usernameInputText, _passwordInputText, _lobbyKeyInput; //user and pass input // lobbyKey input
     [SerializeField] private Text _errorUserPassText; //incorrect text output to show when u&p are wrong or taken
     [SerializeField] private Text _errorLobbyKeyText; //incorrect text output when you enter the wrong lobby key
     private string _errorKeyMessage = ""; //lobby key text
     bool _correctUandP, _incorrectUandP = false; //was the password and username correct/taken/wrong?
-    
+
     private GameScript _gameScript; //game script reference
     private MenuScript _menuScript; //menu script reference
     [SerializeField] private Text _keyHostText; //Text that displays lobby key when hosting
@@ -33,6 +34,8 @@ public class SocketManager : MonoBehaviour
     private int[] _tempTurnOrder;
     private bool heartbeating, _recievedHeartbeat = false; //has the heartbeat started? // did this client recieve a heartbeat back from the server
     private bool _otherPlayerTimedout = false; //bool for update loop when someone (not you) dcs from lobby
+    [SerializeField] private GameObject _MPFadeTurnTextbox;
+    [SerializeField] private Animator _fadeTextAnimator;
     private enum GAMESTATE //Enum for game state / what point the game is currently at.
     {
         STARTMENU,
@@ -47,7 +50,9 @@ public class SocketManager : MonoBehaviour
         PLAYINGMULTIPLAYER,
         WAITINGRESTART,
         HELPSCREEN,
-        CREDITSCREEN
+        CREDITSCREEN,
+        MYACCOUNT,
+        COLOURSCREEN
     };
     private GAMESTATE _currentGamestate = GAMESTATE.STARTMENU; //what is the current gamestate
     private string _lobbyString = "null"; //current lobby string
@@ -57,16 +62,18 @@ public class SocketManager : MonoBehaviour
     private DateTime heartbeatTimer = DateTime.Now; //heartbeat timer for client side before it timesout
     private bool _checklistEmpty = true; //is the checklist empty / should you send a heartbeat since its empty
     private bool _startHeartbeat = false; //start heartbeat in update loop when server gets back connect message.
-    private bool _accounttaken,_accountmade = false;
+    private bool _accounttaken, _accountmade = false;
     [SerializeField] private GameObject connectionStatusText, lastPingText;
     [SerializeField] private Text _errorTimedOutClientSideText;
     private float lastPingCounter = -1;
     private string _myUserID = "null";
     [SerializeField] private Text _usernameText;
     [SerializeField] private GameObject _accountDetailsObj;
-    
-    [SerializeField] Toggle _passwordVisibility;
-    
+
+    [SerializeField] private string _myColour;
+    private bool _changeColour = false;
+
+
     void Awake()
     {
         _gameScript = this.GetComponent<GameScript>();///set reference to gamescript
@@ -88,17 +95,19 @@ public class SocketManager : MonoBehaviour
             //Should send player to main menu.. since this means that you dced
         }
     }
-  // -----------------------------------------------------------------------------------------------------------------------------
-  // ------------------------------------------------UPDATE---FUNCTION------------------------------------------------------------
-  // -----------------------------------------------------------------------------------------------------------------------------
+    // -----------------------------------------------------------------------------------------------------------------------------
+    // ------------------------------------------------UPDATE---FUNCTION------------------------------------------------------------
+    // -----------------------------------------------------------------------------------------------------------------------------
     public void Update()
     {
-        if( _passwordVisibility.isOn){
-           _passwordInputText.contentType = InputField.ContentType.Password;
-       }else{
-           _passwordInputText.contentType = InputField.ContentType.Standard;
-       }
-        if(_currentGamestate != GAMESTATE.STARTMENU){ //if you arent on the start menu erase client side timeout error text
+        if(Input.GetKeyDown(KeyCode.W)){
+            FadeTurn();
+        }
+        if(Input.GetKeyDown(KeyCode.S)){
+            ClearFadeTurn();
+        }
+        if (_currentGamestate != GAMESTATE.STARTMENU)
+        { //if you arent on the start menu erase client side timeout error text
             _errorTimedOutClientSideText.text = "";
         }
         if (_currentGamestate == GAMESTATE.HOSTSCREEN || _currentGamestate == GAMESTATE.JOINSCREEN)
@@ -108,7 +117,7 @@ public class SocketManager : MonoBehaviour
         if (_currentGamestate == GAMESTATE.LOBBYMENU)
         { //if you are in the lobby menu
             _errorLobbyKeyText.text = _errorKeyMessage;
-            
+
         }
         if (_joinedGame)
         {
@@ -119,8 +128,11 @@ public class SocketManager : MonoBehaviour
         if (_multiplayerLobbyReady)
         { //Enough players in lobby, get it ready to play.
             _multiplayerLobbyReady = false;
+            _gameScript.MPSetLobbySize(_randomTurnOrder);
+            _gameScript.MPSetColour(_colourList, _myColour);
             _gameScript.UpdateMPUsernames(_userList);
             _gameScript.MPSetTurnOrder(_randomTurnOrder); //set random turn order
+
             _menuScript.StartMPGame(); //hide menus so you can see game board
             _gameScript.StartMultiplayerGameBoard(); //display game board and hide board settings
             _multiplayerGameStarted = true; //game has started
@@ -139,7 +151,7 @@ public class SocketManager : MonoBehaviour
         { //what to do when you get a button.
             _recieveButton = false;
             _gameScript.MPButtonClicked(_tempButtonName);
-            
+
 
         }
         if (_playerQuitAfterGame)
@@ -184,9 +196,10 @@ public class SocketManager : MonoBehaviour
             heartbeatTimer = DateTime.Now;
             lastPingCounter = 0;
         }
-        if(heartbeating){
+        if (heartbeating)
+        {
             lastPingCounter += Time.deltaTime;
-            
+
         }
         if ((DateTime.Now - heartbeatTimer).TotalSeconds > 15 && heartbeating)
         {
@@ -211,48 +224,75 @@ public class SocketManager : MonoBehaviour
                 InvokeRepeating("HeartBeatMessageToServer", 0, 0.5f);  //send a repeating message to server every second to tell server that client is still connected.
             }
         }
-        if(lastPingCounter == -1 && _currentGamestate == GAMESTATE.LOGINREGISTER){
+        if (lastPingCounter == -1 && _currentGamestate == GAMESTATE.LOGINREGISTER)
+        {
             SendServerPayload("CONNECTDNB", true);
         }
         LoginRegisterUpdateLoop();
         UpdateConnectStatus();
-    }
-    void LoginRegisterUpdateLoop(){
-        //if the user and password arent taken tell user you successfully created the account..
-        if(_accounttaken){ //what to do if the username is taken when you are trying to create a new account
-            _accounttaken = false;
-            string _tempString = "Username '" + _usernameInputText.text + "' is taken."; 
-            _errorUserPassText.text = _tempString;
+        if (_changeColour)
+        {
+            _changeColour = false;
+            foreach (GameObject colourButton in GameObject.FindGameObjectsWithTag("ColourButton"))
+            {
+                colourButton.GetComponent<Image>().sprite = _unselectedColour;
+            }
+            GameObject.Find(_myColour + "ColourButton").GetComponent<Image>().sprite = _selectedColour;
+            _gameScript.UsernameTextColour(_usernameText, _myColour);
+
         }
-        if(_accountmade){ //what to do if the username is taken when you are trying to create a new account
-            _accountmade = false;
-            string _tempString = "Account creation successful!!"; 
+    }
+    void LoginRegisterUpdateLoop()
+    {
+        //if the user and password arent taken tell user you successfully created the account..
+        if (_accounttaken)
+        { //what to do if the username is taken when you are trying to create a new account
+            _accounttaken = false;
+            string _tempString = "Username '" + _usernameInputText.text + "' is taken.";
             _errorUserPassText.text = _tempString;
+            FindObjectOfType<AudioManager>().Play("failSound");
+        }
+        if (_accountmade)
+        { //what to do if the username is taken when you are trying to create a new account
+            _accountmade = false;
+            string _tempString = "Account creation successful!!";
+            _errorUserPassText.text = _tempString;
+            FindObjectOfType<AudioManager>().Play("successSound");
         }
         if (_correctUandP)
         {
             _correctUandP = false;
-            if(_myUserID != "null"){
-                
+            if (_myUserID != "null")
+            {
+
                 _menuScript.LobbyMenuSceenButton();
+                FindObjectOfType<AudioManager>().Play("successSound");
+
             }
-            else{
+            else
+            {
                 _errorUserPassText.text = "Already logged in, wait 15 seconds and try again";
+                FindObjectOfType<AudioManager>().Play("failSound");
             }
         }
-        if(_incorrectUandP){
+        if (_incorrectUandP)
+        {
             _incorrectUandP = false;
             _errorUserPassText.text = "Username or Password was entered incorrectly";
+            FindObjectOfType<AudioManager>().Play("failSound");
         }
-        if(_myUserID != "null"){
+        if (_myUserID != "null")
+        {
             _usernameText.text = _myUserID;
-            _accountDetailsObj.SetActive(true); 
+            _gameScript.UsernameTextColour(_usernameText, _myColour);
+            _accountDetailsObj.SetActive(true);
         }
-        if(_myUserID == "null"){
-            _accountDetailsObj.SetActive(false); 
+        if (_myUserID == "null")
+        {
+            _accountDetailsObj.SetActive(false);
         }
     }
-    
+
     public void startUDP() //start UDP and connect to server.
     {
         udp = new UdpClient(); //create new udp client
@@ -289,7 +329,7 @@ public class SocketManager : MonoBehaviour
         HandleMessagePayload(returnData);
     }
     int[] _randomTurnOrder;
-    string[] _userList;
+    string[] _userList, _colourList;
     void HandleMessagePayload(string data)
     { //recieved message from server now process it.
         Debug.Log("Got Message: " + data);
@@ -365,16 +405,17 @@ public class SocketManager : MonoBehaviour
                 StartGameServerMessage startGamePayload = JsonUtility.FromJson<StartGameServerMessage>(data); //convert data from base class to result class
                 if (startGamePayload.startGame == 1)
                 { //start game
-                
+
                     //Players usernames are passed through as a userlist from server when the game starts.
                     Debug.Log(startGamePayload.UserList.ToString());
-                    
+
                     //From here i need to use the user list to populate the user names in the gamescript
                     _randomTurnOrder = startGamePayload.RandomOrder;
                     _userList = startGamePayload.UserList;
+                    _colourList = startGamePayload.ColourList;
                     Debug.Log("StartGame!");
                     _multiplayerLobbyReady = true;
-                    
+
 
                 }
                 //gmScript.FillClientDetails(newClientPayload.players[0].id, newClientPayload.players[0].lobbyID);//tell client what its own ID is and what lobby it is in
@@ -407,17 +448,24 @@ public class SocketManager : MonoBehaviour
                 break;
             case socketMessagetype.LOGINACCOUNT:
                 //what to do if username and password were right
-                _correctUandP = true;
                 LoginCreateAccountMessage loginpayload = JsonUtility.FromJson<LoginCreateAccountMessage>(data);
                 _myUserID = loginpayload.UserID;
+                _myColour = loginpayload.MyColour;
+                _correctUandP = true;
                 break;
             case socketMessagetype.LOGINFAILED:
                 //what to do if username and password were right
                 _incorrectUandP = true;
                 break;
-             case socketMessagetype.ALREADYLOGGEDIN:
+            case socketMessagetype.ALREADYLOGGEDIN:
                 //what to do if username and password were right
                 _correctUandP = true;
+                break;
+            case socketMessagetype.COLOURCHANGE:
+                //What to do if you changed your colour
+                ColourMessage colourPayload = JsonUtility.FromJson<ColourMessage>(data);
+                _myColour = colourPayload.MyColour;
+                _changeColour = true;
                 break;
         }
 
@@ -436,7 +484,8 @@ public class SocketManager : MonoBehaviour
                         replay = 1 //tells server yes (1 = true since python doesnt have booleans)
                     };
                     var replayData = Encoding.ASCII.GetBytes(JsonUtility.ToJson(replayPayload)); //convert payload to transmittable data.(json file)
-                    if(udp != null){
+                    if (udp != null)
+                    {
                         udp.Send(replayData, replayData.Length); //send data to server you connected to in start func.
                     }
                     break;
@@ -457,7 +506,8 @@ public class SocketManager : MonoBehaviour
                 header = m_tempmessagetype
             };
             var data = Encoding.ASCII.GetBytes(JsonUtility.ToJson(payload)); //convert payload to transmittable data.(json file)
-            if(udp != null){
+            if (udp != null)
+            {
                 Debug.Log(m_messageType);
                 udp.Send(data, data.Length); //send data to server you connected to in start func. 
             }
@@ -475,7 +525,8 @@ public class SocketManager : MonoBehaviour
             };
             Debug.Log(payload.SizeofBoard);
             var data = Encoding.ASCII.GetBytes(JsonUtility.ToJson(payload)); //convert payload to transmittable data.(json file)
-            if(udp != null){
+            if (udp != null)
+            {
                 udp.Send(data, data.Length); //send data to server you connected to in start func. 
             }
         }
@@ -491,7 +542,7 @@ public class SocketManager : MonoBehaviour
         }
         else if (_checklist.Count >= 1) //if the checklist has atleast one item in it.
         {
-            
+
             switch (_checklist[0])
             {
                 case "HOSTDNBGAME":
@@ -520,7 +571,8 @@ public class SocketManager : MonoBehaviour
                 header = socketMessagetype.HEARTBEAT,
             };
             var data = Encoding.ASCII.GetBytes(JsonUtility.ToJson(payload));
-            if(udp != null){
+            if (udp != null)
+            {
                 udp.Send(data, data.Length);
             }
 
@@ -528,10 +580,23 @@ public class SocketManager : MonoBehaviour
         Debug.Log("heartbeating message");
 
     }
-    public void ExitGameButton(){
-        if(_currentGamestate == GAMESTATE.PLAYINGMULTIPLAYER){
-            
+    public void ExitGameButton()
+    {
+        if (_currentGamestate == GAMESTATE.PLAYINGMULTIPLAYER)
+        {
+
             SendServerPayload("PLAYERQUIT", true);
+        }
+    }
+    public void PasswordVisibleToggle(Toggle m_passwordVisibility)
+    {
+        if (m_passwordVisibility.isOn)
+        {
+            _passwordInputText.contentType = TMP_InputField.ContentType.Password;
+        }
+        else
+        {
+            _passwordInputText.contentType = TMP_InputField.ContentType.Standard;
         }
     }
     public void LoginButton() //login button on Lobby menu screen
@@ -543,14 +608,15 @@ public class SocketManager : MonoBehaviour
             Debug.Log("must enter a username and password");
             _errorUserPassText.text = "Cannot leave empty";
         }
-        else if(lastPingCounter == -1){
+        else if (lastPingCounter == -1)
+        {
             _errorUserPassText.text = "Not connected to server";
         }
         else
         {
             //SEND password and user to server and examine them.
             //Check if user name is in system
-            
+
             var payload = new LoginCreateAccountMessage
             { //payload is what you are sending to server.
                 header = socketMessagetype.LOGINACCOUNT, //header tells server what type of message it is.
@@ -558,7 +624,8 @@ public class SocketManager : MonoBehaviour
                 PasswordID = _tempPasswordInput
             };
             var data = Encoding.ASCII.GetBytes(JsonUtility.ToJson(payload)); //convert payload to transmittable data.(json file)
-            if(udp != null){
+            if (udp != null)
+            {
                 udp.Send(data, data.Length); //send data to server you connected to in start func. 
             }
             //Check if password matches username in system
@@ -567,7 +634,7 @@ public class SocketManager : MonoBehaviour
         }
 
         //if the user and password are correct login...
-       
+
 
         playerQuitText.gameObject.SetActive(false); //hide player quit text 
 
@@ -593,14 +660,15 @@ public class SocketManager : MonoBehaviour
                 PasswordID = _tempPasswordInput
             };
             var data = Encoding.ASCII.GetBytes(JsonUtility.ToJson(payload)); //convert payload to transmittable data.(json file)
-            if(udp != null){
+            if (udp != null)
+            {
                 udp.Send(data, data.Length); //send data to server you connected to in start func. 
             }
             //_UandPNotTaken = true;
             _errorUserPassText.text = ""; //Reset back to nothing once you enter a correct U & P
         }
 
-        
+
 
         playerQuitText.gameObject.SetActive(false); //hide player quit text 
 
@@ -614,11 +682,13 @@ public class SocketManager : MonoBehaviour
             buttonName = m_bName //send buttons name
         };
         var data = Encoding.ASCII.GetBytes(JsonUtility.ToJson(payload)); //convert payload to transmittable data.(json file)
-        if(udp != null){
+        if (udp != null)
+        {
             udp.Send(data, data.Length); //send data to server you connected to in start func. 
         }
     }
-    public void RecivedButtonMessage(){
+    public void RecivedButtonMessage()
+    {
         SendServerPayload("BUTTONRECEIVED", true);
     }
     public void BackToLobbyMenu()
@@ -666,7 +736,7 @@ public class SocketManager : MonoBehaviour
         { //make sure they didnt type null (the default lobbykey)
             _checklist.Add("JOINDNBGAME");
         }
-        else if(_lobbyString.Length < 5)
+        else if (_lobbyString.Length < 5)
         {
             _errorKeyMessage = "Lobby Key " + _lobbyString + " Non-Existent";
         }
@@ -680,23 +750,64 @@ public class SocketManager : MonoBehaviour
         _gameScript.HideScoreBoard();
         SendServerPayload("REPLAY", false);
     }
-    private void UpdateConnectStatus(){
+    private void UpdateConnectStatus()
+    {
         lastPingText.GetComponent<Text>().text = lastPingCounter.ToString() + " Seconds";
-        if(lastPingCounter == -1 || lastPingCounter > 8 && lastPingCounter < 12){
+        if (lastPingCounter == -1 || lastPingCounter > 8 && lastPingCounter < 12)
+        {
             //the heart hasnt connected to the server yet
             connectionStatusText.GetComponent<Text>().text = "Pending...";
             connectionStatusText.GetComponent<Text>().color = Color.yellow;
         }
-        if(lastPingCounter < 8 && lastPingCounter > 0){
+        if (lastPingCounter < 8 && lastPingCounter > 0)
+        {
             //the heart is connected and alive
             connectionStatusText.GetComponent<Text>().text = "Connected!";
             connectionStatusText.GetComponent<Text>().color = Color.green;
         }
-        if(lastPingCounter >= 12){
+        if (lastPingCounter >= 12)
+        {
             //the heart message isnt coming back from the server for long enough
             connectionStatusText.GetComponent<Text>().text = "Disconnected!";
             connectionStatusText.GetComponent<Text>().color = Color.red;
         }
+    }
+    [SerializeField] private Sprite _unselectedColour, _selectedColour;
+    public void SetColourButtonSelected()
+    { 
+        foreach (GameObject colourButton in GameObject.FindGameObjectsWithTag("ColourButton")) //reset to unselected, so if you are logging into a different account, it wont have your last colour selected 
+        {
+                colourButton.GetComponent<Image>().sprite = _unselectedColour;
+        }
+        GameObject.Find(_myColour + "ColourButton").GetComponent<Button>().image.sprite = _selectedColour;
+
+    }
+    public void SendColourMessage(string m_colourName)
+    { //called by colour change buttons Multiplayer
+
+        if (_myColour != m_colourName) //dont send server a message if you already have that colour selected.
+        {
+            var payload = new ColourMessage
+            { //payload is what you are sending to server.
+                header = socketMessagetype.COLOURCHANGE, //header tells server what type of message it is.
+                MyColour = m_colourName
+            };
+            var data = Encoding.ASCII.GetBytes(JsonUtility.ToJson(payload)); //convert payload to transmittable data.(json file)
+            if (udp != null)
+            {
+                udp.Send(data, data.Length); //send data to server you connected to in start func. 
+            }
+        }
+    }
+    
+    public void FadeTurn(){
+        _MPFadeTurnTextbox.GetComponent<TMP_Text>().text = _myUserID + "'s turn.";
+        _MPFadeTurnTextbox.SetActive(true);
+        _fadeTextAnimator.SetBool("Fade", true); 
+
+    }
+    public void ClearFadeTurn(){
+        _fadeTextAnimator.SetBool("Fade", false);
     }
 
 }
@@ -723,7 +834,8 @@ public enum socketMessagetype
     CREATEACCOUNT = 140,
     LOGINACCOUNT = 141, //SENT FROM SERVER TO CLIENT to tell client login successful // SENT FROM CLIENT TO SERVER to tell server client is trying to log in
     LOGINFAILED = 142, //SENT FROM SERVER TO CLIENT to tell client login failed
-    ALREADYLOGGEDIN = 143 //SENT FROM SERVER TO CLIENT to tell client that that account is already logged in on.
+    ALREADYLOGGEDIN = 143, //SENT FROM SERVER TO CLIENT to tell client that that account is already logged in on.
+    COLOURCHANGE = 145 //SENT FROM SERVER TO CLIENT when the server gets colour change request // CLIENT TO SERVER when you want to change colours
 }
 
 [System.Serializable]
@@ -752,6 +864,8 @@ class StartGameServerMessage : BaseSocketMessage
     public int startGame;
     public int[] RandomOrder;
     public string[] UserList;
+    public string[] ColourList;
+
 }
 [System.Serializable]
 class RestartClientMessage : BaseSocketMessage
@@ -773,6 +887,12 @@ class LoginCreateAccountMessage : BaseSocketMessage
 {
     public string UserID;
     public string PasswordID;
+    public string MyColour;
+}
+[System.Serializable]
+class ColourMessage : BaseSocketMessage
+{
+    public string MyColour;
 }
 
 [System.Serializable]
