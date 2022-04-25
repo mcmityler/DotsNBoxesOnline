@@ -36,6 +36,8 @@ public class SocketManager : MonoBehaviour
     private bool _otherPlayerTimedout = false; //bool for update loop when someone (not you) dcs from lobby
     [SerializeField] private GameObject _MPFadeTurnTextbox;
     [SerializeField] private Animator _fadeTextAnimator;
+    private int _myWins = -1;
+    private int _myMatches = -1;
     private enum GAMESTATE //Enum for game state / what point the game is currently at.
     {
         STARTMENU,
@@ -100,6 +102,7 @@ public class SocketManager : MonoBehaviour
     // -----------------------------------------------------------------------------------------------------------------------------
     public void Update()
     {
+        Debug.Log("My matches: " + _myMatches + " My Wins: " + _myWins);
         if(Input.GetKeyDown(KeyCode.W)){
             FadeTurn();
         }
@@ -451,6 +454,8 @@ public class SocketManager : MonoBehaviour
                 LoginCreateAccountMessage loginpayload = JsonUtility.FromJson<LoginCreateAccountMessage>(data);
                 _myUserID = loginpayload.UserID;
                 _myColour = loginpayload.MyColour;
+                _myWins = loginpayload.Wins;
+                _myMatches = loginpayload.Matches;
                 _correctUandP = true;
                 break;
             case socketMessagetype.LOGINFAILED:
@@ -674,6 +679,20 @@ public class SocketManager : MonoBehaviour
 
 
     }
+    public void SendGameoverMessage(int m_winner){
+        var payload = new GameoverMessage
+        { //payload is what you are sending to server.
+            header = socketMessagetype.GAMEOVER, //header tells server what type of message it is.
+            Winner = m_winner //send buttons name
+        };
+        var data = Encoding.ASCII.GetBytes(JsonUtility.ToJson(payload)); //convert payload to transmittable data.(json file)
+        if (udp != null)
+        {
+            udp.Send(data, data.Length); //send data to server you connected to in start func. 
+        }
+        _myWins += m_winner; //if you won, add 1, if you lost add 0
+        _myMatches += 1;
+    }
     public void SendButtonMessage(string m_bName)
     {
         var payload = new ButtonMessage
@@ -835,7 +854,8 @@ public enum socketMessagetype
     LOGINACCOUNT = 141, //SENT FROM SERVER TO CLIENT to tell client login successful // SENT FROM CLIENT TO SERVER to tell server client is trying to log in
     LOGINFAILED = 142, //SENT FROM SERVER TO CLIENT to tell client login failed
     ALREADYLOGGEDIN = 143, //SENT FROM SERVER TO CLIENT to tell client that that account is already logged in on.
-    COLOURCHANGE = 145 //SENT FROM SERVER TO CLIENT when the server gets colour change request // CLIENT TO SERVER when you want to change colours
+    COLOURCHANGE = 145, //SENT FROM SERVER TO CLIENT when the server gets colour change request // CLIENT TO SERVER when you want to change colours
+    GAMEOVER = 150 //SENT FROM THE CLIENT TO SERVER WHEN THE GAME IS OVER
 }
 
 [System.Serializable]
@@ -878,9 +898,9 @@ class RestartServerMessage : BaseSocketMessage
     public int[] RandomOrder;
 }
 [System.Serializable]
-class Login : BaseSocketMessage
+class GameoverMessage : BaseSocketMessage
 {
-
+    public int Winner;
 }
 [System.Serializable]
 class LoginCreateAccountMessage : BaseSocketMessage
@@ -888,6 +908,8 @@ class LoginCreateAccountMessage : BaseSocketMessage
     public string UserID;
     public string PasswordID;
     public string MyColour;
+    public int Wins;
+    public int Matches;
 }
 [System.Serializable]
 class ColourMessage : BaseSocketMessage
