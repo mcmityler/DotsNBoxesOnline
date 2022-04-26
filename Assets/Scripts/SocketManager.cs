@@ -9,7 +9,7 @@ using TMPro;
 
 public class SocketManager : MonoBehaviour
 {
-
+    const float VERSION = 0.23f;
     public UdpClient udp; //new udp (send/recieve messages from aws) 
     public const string IP_ADRESS = "54.205.115.9"; //the ip the server is connected to..
     public const int PORT = 12345; //port we are using
@@ -19,7 +19,7 @@ public class SocketManager : MonoBehaviour
     [SerializeField] private Text _errorUserPassText; //incorrect text output to show when u&p are wrong or taken
     [SerializeField] private Text _errorLobbyKeyText; //incorrect text output when you enter the wrong lobby key
     private string _errorKeyMessage = ""; //lobby key text
-    bool _correctUandP, _incorrectUandP = false; //was the password and username correct/taken/wrong?
+    bool _correctUandP, _incorrectUandP, _clientOutofDate = false; //was the password and username correct/taken/wrong? or is the client out of date
 
     private GameScript _gameScript; //game script reference
     private MenuScript _menuScript; //menu script reference
@@ -38,6 +38,8 @@ public class SocketManager : MonoBehaviour
     [SerializeField] private Animator _fadeTextAnimator;
     private int _myWins = -1;
     private int _myMatches = -1;
+    private int _winnerID = -1;
+    [SerializeField] private AccountStatScript _accountStatScript;
     private enum GAMESTATE //Enum for game state / what point the game is currently at.
     {
         STARTMENU,
@@ -160,6 +162,15 @@ public class SocketManager : MonoBehaviour
         if (_playerQuitAfterGame)
         { //what to do if a player quits your lobby at the end of a game.
             _playerQuitAfterGame = false;
+            //Update Account Stats.
+            int m_myturnNumber = _gameScript.GetMyPlayerNumber();
+            _winnerID = _gameScript.GetEarlyWinner();
+            Debug.Log("my turn number " + m_myturnNumber + " the game winner: " + _winnerID);
+            if(m_myturnNumber == _winnerID){
+                _myWins += 1;
+            }
+            _myMatches += 1;
+            _accountStatScript.UpdateAccountStats(_myUserID, _myWins, _myMatches);
             playerQuitText.gameObject.SetActive(true);
             QuittoLobbyMenuFunc();
 
@@ -270,6 +281,7 @@ public class SocketManager : MonoBehaviour
 
                 _menuScript.LobbyMenuSceenButton();
                 FindObjectOfType<AudioManager>().Play("successSound");
+                _accountStatScript.UpdateAccountStats(_myUserID, _myWins, _myMatches);
 
             }
             else
@@ -293,6 +305,11 @@ public class SocketManager : MonoBehaviour
         if (_myUserID == "null")
         {
             _accountDetailsObj.SetActive(false);
+        }
+        if(_clientOutofDate == true){
+            _clientOutofDate = false;
+            _errorUserPassText.text = "Client Version is out of date";
+            FindObjectOfType<AudioManager>().Play("failSound");
         }
     }
 
@@ -463,8 +480,14 @@ public class SocketManager : MonoBehaviour
                 _incorrectUandP = true;
                 break;
             case socketMessagetype.ALREADYLOGGEDIN:
-                //what to do if username and password were right
+                //what to do if username and password were right but already logged into
                 _correctUandP = true;
+                break;
+            case socketMessagetype.OLDVERSION:
+                //what to do the client is out of date
+                Debug.Log("client is out of date");
+                _clientOutofDate = true;
+                
                 break;
             case socketMessagetype.COLOURCHANGE:
                 //What to do if you changed your colour
@@ -500,12 +523,25 @@ public class SocketManager : MonoBehaviour
                 case "JOINDNBGAME":
                     m_lobbykeyMessage = true;
                     break;
+                case "PLAYERQUIT":
+                    var payload = new GameoverMessage
+                    { //payload is what you are sending to server.
+                        header = socketMessagetype.PLAYERQUIT,
+                        Winner = _winnerID
+                    };
+                    var data = Encoding.ASCII.GetBytes(JsonUtility.ToJson(payload)); //convert payload to transmittable data.(json file)
+                    if (udp != null)
+                    {
+                        Debug.Log(m_messageType);
+                        udp.Send(data, data.Length); //send data to server you connected to in start func. 
+                    }
+                    break;
 
             }
         }
         else if (m_baseMessage) //if its a base server message conver string passes to header and then send base socket message to server.
         {
-            socketMessagetype m_tempmessagetype = (socketMessagetype)System.Enum.Parse(typeof(socketMessagetype), m_messageType, true);
+            socketMessagetype m_tempmessagetype = (socketMessagetype)System.Enum.Parse(typeof(socketMessagetype), m_messageType, true); //switch string into socket message type. / header
             var payload = new BaseSocketMessage
             { //payload is what you are sending to server.
                 header = m_tempmessagetype
@@ -589,8 +625,10 @@ public class SocketManager : MonoBehaviour
     {
         if (_currentGamestate == GAMESTATE.PLAYINGMULTIPLAYER)
         {
-
-            SendServerPayload("PLAYERQUIT", true);
+            _winnerID = _gameScript.GetEarlyWinner();
+            
+            
+            SendServerPayload("PLAYERQUIT", false);
         }
     }
     public void PasswordVisibleToggle(Toggle m_passwordVisibility)
@@ -626,7 +664,8 @@ public class SocketManager : MonoBehaviour
             { //payload is what you are sending to server.
                 header = socketMessagetype.LOGINACCOUNT, //header tells server what type of message it is.
                 UserID = _tempUserInput,
-                PasswordID = _tempPasswordInput
+                PasswordID = _tempPasswordInput,
+                VersionID = VERSION
             };
             var data = Encoding.ASCII.GetBytes(JsonUtility.ToJson(payload)); //convert payload to transmittable data.(json file)
             if (udp != null)
@@ -692,6 +731,7 @@ public class SocketManager : MonoBehaviour
         }
         _myWins += m_winner; //if you won, add 1, if you lost add 0
         _myMatches += 1;
+        _accountStatScript.UpdateAccountStats(_myUserID, _myWins, _myMatches);
     }
     public void SendButtonMessage(string m_bName)
     {
@@ -854,6 +894,7 @@ public enum socketMessagetype
     LOGINACCOUNT = 141, //SENT FROM SERVER TO CLIENT to tell client login successful // SENT FROM CLIENT TO SERVER to tell server client is trying to log in
     LOGINFAILED = 142, //SENT FROM SERVER TO CLIENT to tell client login failed
     ALREADYLOGGEDIN = 143, //SENT FROM SERVER TO CLIENT to tell client that that account is already logged in on.
+    OLDVERSION = 144, //SENT FROM SERVER TO CLIENT WHEN THE CLIENTS VERSION IS OUT OF DATE
     COLOURCHANGE = 145, //SENT FROM SERVER TO CLIENT when the server gets colour change request // CLIENT TO SERVER when you want to change colours
     GAMEOVER = 150 //SENT FROM THE CLIENT TO SERVER WHEN THE GAME IS OVER
 }
@@ -907,9 +948,11 @@ class LoginCreateAccountMessage : BaseSocketMessage
 {
     public string UserID;
     public string PasswordID;
+    public float VersionID;
     public string MyColour;
     public int Wins;
     public int Matches;
+    
 }
 [System.Serializable]
 class ColourMessage : BaseSocketMessage

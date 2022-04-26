@@ -95,7 +95,7 @@ public class GameScript : MonoBehaviour
         }
         if (_currentGamestate == GAMESTATE.GAMEOVER) //if you are on the gameover screen
         {
-            DisplayWinner(); //Display the winner 
+            DisplayWinner(true); //Display the winner 
         }
         if (_currentGamestate == GAMESTATE.LOBBYMENU)
         {//if you are on the multiplayer lobby menu screen
@@ -504,7 +504,7 @@ public class GameScript : MonoBehaviour
             _currentGamestate = GAMESTATE.GAMEOVER;
             _socketManager.SetSOCKETGameState(_currentGamestate.ToString()); //Change gamestate in socketmanager
             _didYouWinMP = 0;
-            DisplayWinner();
+            DisplayWinner(true);
 
             _socketManager.SendGameoverMessage(_didYouWinMP);
             for (int i = 0; i < _numberOfPlayers; i++)//Update score one last time!!
@@ -518,20 +518,23 @@ public class GameScript : MonoBehaviour
         }
     }
     private int _didYouWinMP = 0; //if 0 you lost, if 1 you won
-    private void DisplayWinner() //Display Winner / Score screen scores.
+    private void DisplayWinner(bool m_displayScores) //Display Winner / Score screen scores.
     {
-        _LCRestart.SetActive(false);
-        _MPRestart.SetActive(false);
-        if (_localGame)
-        {
-            _LCRestart.SetActive(true);
+        if(m_displayScores){
+            _LCRestart.SetActive(false);
+            _MPRestart.SetActive(false);
+            if (_localGame)
+            {
+                _LCRestart.SetActive(true);
+            }
+            else if (!_localGame)
+            {
+                _MPRestart.SetActive(true);
+            }
+
+            _endgameScoreAnimator.SetInteger("NumberOfPlayers", _numberOfPlayers); //change size of score screen depending on player number
+            _gameoverObj.SetActive(true); //show the endgame score screen and the restart btn
         }
-        else if (!_localGame)
-        {
-            _MPRestart.SetActive(true);
-        }
-        _endgameScoreAnimator.SetInteger("NumberOfPlayers", _numberOfPlayers); //change size of score screen depending on player number
-        _gameoverObj.SetActive(true); //show the endgame score screen and the restart btn
         int[] m_playerPlace = new int[] { 0, 0, 0, 0 }; //check what place each player finished in.
         for (int i = 0; i < _numberOfPlayers; i++)
         {
@@ -594,6 +597,7 @@ public class GameScript : MonoBehaviour
         {
             _endgameScoreTextboxes[m_ctr].text = _playerNames[m_firstPlace] + "      Boxes: " + _playerScores[m_firstPlace];
             _winnerText.text = _playerNames[m_firstPlace] + " is the Winner!";
+            _winnerNumber = m_firstPlace;
             m_ctr++;
         }
         foreach (int second in m_secondPlace) //cycle through any players that tied for second
@@ -602,6 +606,7 @@ public class GameScript : MonoBehaviour
             if (m_firstPlace == -1 && m_secondPlace.Count == 1)
             {
                 _winnerText.text = _playerNames[second] + " is the Winner!";
+                _winnerNumber = second;
             }
             m_ctr++;
         }
@@ -611,6 +616,7 @@ public class GameScript : MonoBehaviour
             if (m_secondPlace.Count == 0 && m_thirdPlace.Count == 1)
             {
                 _winnerText.text = _playerNames[third] + " is the Winner!";
+                _winnerNumber = third;
             }
             m_ctr++;
         }
@@ -621,7 +627,24 @@ public class GameScript : MonoBehaviour
         }
 
     }
-
+    int _winnerNumber = -1;
+    public int GetEarlyWinner()//Get winner id if there is one and someone left early.
+    {
+        int m_winnerNum = -1;
+        int totalScore = 0;
+        foreach(int m_score in _playerScores){
+            totalScore += m_score;
+        }
+        if(totalScore >= ((_boardSize * _boardSize)/2)) //if you have collected over half of the games squares change from -1 to something else.
+        {
+            DisplayWinner(false);
+            m_winnerNum = _winnerNumber;
+            
+        }
+        Debug.Log("the winner is " + m_winnerNum);
+        return m_winnerNum;
+        
+    }
 
     public int GetPlayerSize()
     { //get player size froms script while its private
@@ -646,6 +669,9 @@ public class GameScript : MonoBehaviour
     public void SetMyPlayerNumber(int m_myPlayerNumber) //get my turn number from the server (aka what player you are in the lobby)
     {
         _myPlayerNumberMP = m_myPlayerNumber;
+    }
+    public int GetMyPlayerNumber(){
+        return _myPlayerNumberMP;
     }
     public void MPSetLobbySize(int[] m_turnOrder)
     {
