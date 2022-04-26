@@ -105,12 +105,12 @@ public class SocketManager : MonoBehaviour
     public void Update()
     {
         Debug.Log("My matches: " + _myMatches + " My Wins: " + _myWins);
-        if(Input.GetKeyDown(KeyCode.W)){
+        /*if(Input.GetKeyDown(KeyCode.W)){
             FadeTurn();
         }
         if(Input.GetKeyDown(KeyCode.S)){
             ClearFadeTurn();
-        }
+        }*/
         if (_currentGamestate != GAMESTATE.STARTMENU)
         { //if you arent on the start menu erase client side timeout error text
             _errorTimedOutClientSideText.text = "";
@@ -692,6 +692,10 @@ public class SocketManager : MonoBehaviour
         {
             Debug.Log("must enter a username and password");
             _errorUserPassText.text = "Cannot leave empty";
+        }
+        else if (lastPingCounter == -1)
+        {
+            _errorUserPassText.text = "Not connected to server";
         }
         else
         {
