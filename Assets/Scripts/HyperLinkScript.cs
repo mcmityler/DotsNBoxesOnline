@@ -1,10 +1,14 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+/*
 
+THIS SCRIPT HAS EVERYTHING THAT DEALS WITH HYPERLINKS ON THE CREDIT SCREEN
+by Tyler McMillan
+*/
 public class HyperLinkScript : MonoBehaviour
 {
-    
+    //Called when you press "highlighted text"(aka buttons) on credit screen
     public void linkedInURL(){
         Application.OpenURL("https://www.linkedin.com/in/tyler-mcmillan-580603216/");
     }

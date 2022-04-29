@@ -3,7 +3,11 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+/*
 
+THIS SCRIPT HAS EVERYTHING TO DO WITH TABING BETWEEN TEXT BOXES
+by Tyler McMillan
+*/
 public class TabScript : MonoBehaviour
 {
     [SerializeField] private TMP_InputField _usernameInput, _passwordInput;

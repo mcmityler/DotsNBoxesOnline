@@ -6,10 +6,14 @@ using System;
 using UnityEngine.UI;
 using System.Collections.Generic;
 using TMPro;
+/*
 
+THIS SCRIPT HAS EVERYTHING TO DO WITH SENDING AND RECIEVING SERVER MESSAGES
+by Tyler McMillan
+*/
 public class SocketManager : MonoBehaviour
 {
-    const float VERSION = 0.23f;
+    const float VERSION = 0.23f; //what version you are playing on (sends to server to check that you are on the right version)
     public UdpClient udp; //new udp (send/recieve messages from aws) 
     public const string IP_ADRESS = "54.205.115.9"; //the ip the server is connected to..
     public const int PORT = 12345; //port we are using
@@ -40,6 +44,8 @@ public class SocketManager : MonoBehaviour
     private int _myMatches = -1;
     private int _winnerID = -1;
     [SerializeField] private AccountStatScript _accountStatScript;
+
+    [SerializeField] private ScoreScript _scoreScript;
     private enum GAMESTATE //Enum for game state / what point the game is currently at.
     {
         STARTMENU,
@@ -561,7 +567,7 @@ public class SocketManager : MonoBehaviour
             { //payload is what you are sending to server.
                 header = m_tempmessagetype, //header tells server what type of message it is.
                 lobbyKey = _lobbyString,
-                playerLimit = _gameScript.GetPlayerSize(), //tell server and other players how many players in the game if host.
+                playerLimit = _gameScript.GetLobbySize(), //tell server and other players how many players in the game if host.
                 SizeofBoard = _gameScript.GetBoardSize()
             };
             Debug.Log(payload.SizeofBoard);
@@ -810,7 +816,7 @@ public class SocketManager : MonoBehaviour
     {
         _currentGamestate = GAMESTATE.WAITINGRESTART;
         _gameScript.SetGSGameState(_currentGamestate.ToString());
-        _gameScript.HideScoreBoard();
+        _scoreScript.HideScoreBoard();
         SendServerPayload("REPLAY", false);
     }
     private void UpdateConnectStatus()

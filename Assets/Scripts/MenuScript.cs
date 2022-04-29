@@ -82,36 +82,26 @@ public class MenuScript : MonoBehaviour
         _keyLobbyVisable = !_keyLobbyVisable;
         _keyLobbyObj.SetActive(_keyLobbyVisable);
     }
-    public void PauseMenuToggle(){ //toggle lobbyKey screen visibility
+    public void PauseMenuToggle(){ //toggle pause menu visibility
         _pauseMenuVisable = !_pauseMenuVisable;
         _pauseMenuObj.SetActive(_pauseMenuVisable);
     }
-    public void StartMPGame(){
+    public void StartMPGame(){ //turn off multiplayer screens so you can see the gameboard
         _mainMenuObj.SetActive(false);
         _lobbyMenuSceenScreenObj.SetActive(false);
         _loginScreenObj.SetActive(false);
     }
-    public void StopMPGame(){
+    public void StopMPGame(){ //turn back on the multiplayer screens so you can see UI
         _mainMenuObj.SetActive(true);
         _lobbyMenuSceenScreenObj.SetActive(true);
         _loginScreenObj.SetActive(true);
     }
-    public void TimedoutMPGame(){
+    public void TimedoutMPGame(){ //turn on/off screens needed when you time out (back to main menu)
         _connectionObj.SetActive(false);
         _mainMenuObj.SetActive(true);
         _loginScreenObj.SetActive(false);
     }
-    public void checkmarkSound(Toggle _passwordCheckbox){
-        
-        if(_passwordCheckbox.isOn){
-            FindObjectOfType<AudioManager>().Play("checkSound");
-        }else{
-            FindObjectOfType<AudioManager>().Play("uncheckSound");
-        }
-        _socketManager.PasswordVisibleToggle(_passwordCheckbox);
-    }
-
-    public void ColourScreen(){
+    public void ColourScreen(){ //turn on colour screen when button clicked inside of my account screen
         _colourScreenObj.SetActive(true);
         _socketManager.SetColourButtonSelected();
         _socketManager.SetSOCKETGameState("COLOURSCREEN");

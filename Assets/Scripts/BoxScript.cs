@@ -2,9 +2,14 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+/*
 
+THIS SCRIPT HAS EVERYTHING THAT DEALS WITH THE BOX CENTERS
+by Tyler McMillan
+*/
 public class BoxScript : MonoBehaviour
 {
+    //-------------------------Dark Colours---------------------------
     private Color32 _darkblue = new Color32(0, 90, 188, 255);
     private Color32 _darkred = new Color32(137, 0, 0, 255);
     private Color32 _darkgreen = new Color32(1, 123, 0, 255);
@@ -17,7 +22,8 @@ public class BoxScript : MonoBehaviour
         buttonList.Add(_button);
     }
     public void ButtonSurrounded(int m_whosTurn, Color32 m_turnColor, Color32 m_blue, Color32 m_red, Color32 m_green, Color32 m_yellow, Color32 m_purple, Color32 m_orange, Color32 m_lightblue){
-        Color32 m_changeColorTo = new Color32 (0,0,0,0);
+        Color32 m_changeColorTo = new Color32 (0,0,0,0); //hold what colour to turn the box into
+        //------------Change colour to dark version --------------
         if(m_turnColor.Equals(m_blue)){ //blue
             m_changeColorTo = _darkblue;
         }

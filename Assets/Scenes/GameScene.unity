@@ -1183,8 +1183,8 @@ MonoBehaviour:
   onValueChanged:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 871195792}
-        m_TargetAssemblyTypeName: MenuScript, Assembly-CSharp
+      - m_Target: {fileID: 1090501494}
+        m_TargetAssemblyTypeName: AudioManager, Assembly-CSharp
         m_MethodName: checkmarkSound
         m_Mode: 2
         m_Arguments:
@@ -8853,6 +8853,7 @@ GameObject:
   - component: {fileID: 871195792}
   - component: {fileID: 871195793}
   - component: {fileID: 871195794}
+  - component: {fileID: 871195795}
   m_Layer: 0
   m_Name: GameplayManager
   m_TagString: Untagged
@@ -8884,26 +8885,6 @@ MonoBehaviour:
   _mpBoardSizeText: {fileID: 890732275}
   _numberOfPlayerText: {fileID: 311823249}
   _mpLobbySizeText: {fileID: 419165099}
-  _gameoverObj: {fileID: 659909303}
-  _winnerText: {fileID: 325263994}
-  _LCRestart: {fileID: 1417983361}
-  _MPRestart: {fileID: 1453764967}
-  _playerScoreTextboxes:
-  - {fileID: 442575133}
-  - {fileID: 1046995949}
-  - {fileID: 108620876}
-  - {fileID: 1197561300}
-  _endgameScoreTextboxes:
-  - {fileID: 1660897857}
-  - {fileID: 446714763}
-  - {fileID: 1994382752}
-  - {fileID: 1923312807}
-  _endgameScoreAnimator: {fileID: 833928647}
-  _playerNameTextboxes:
-  - {fileID: 1439387215}
-  - {fileID: 1119182096}
-  - {fileID: 1527136040}
-  - {fileID: 1680376003}
   _localPlayerNameInput:
   - {fileID: 1964335397}
   - {fileID: 524959737}
@@ -8917,6 +8898,7 @@ MonoBehaviour:
   - {fileID: 2138469655}
   - {fileID: 433870594}
   - {fileID: 1964420037}
+  _scoreScript: {fileID: 871195795}
   _MPFadeTurnTextbox: {fileID: 1929402073}
 --- !u!4 &871195791
 Transform:
@@ -8976,6 +8958,7 @@ MonoBehaviour:
   _MPFadeTurnTextbox: {fileID: 1929402070}
   _fadeTextAnimator: {fileID: 1929402072}
   _accountStatScript: {fileID: 871195794}
+  _scoreScript: {fileID: 871195795}
   connectionStatusText: {fileID: 556688051}
   lastPingText: {fileID: 1826723919}
   _errorTimedOutClientSideText: {fileID: 1400129818}
@@ -9000,6 +8983,38 @@ MonoBehaviour:
   _winsTextbox: {fileID: 1080694180}
   _winLossRatioTextbox: {fileID: 1619980754}
   _matchesTextbox: {fileID: 200306590}
+--- !u!114 &871195795
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 871195789}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 66670416eba1cb2489d7abdd887342dc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _winnerText: {fileID: 325263994}
+  _endgameScoreAnimator: {fileID: 833928647}
+  _playerScoreTextboxes:
+  - {fileID: 442575133}
+  - {fileID: 1046995949}
+  - {fileID: 108620876}
+  - {fileID: 1197561300}
+  _playerNameTextboxes:
+  - {fileID: 1439387215}
+  - {fileID: 1119182096}
+  - {fileID: 1527136040}
+  - {fileID: 1680376003}
+  _endgameScoreTextboxes:
+  - {fileID: 1660897857}
+  - {fileID: 446714763}
+  - {fileID: 1994382752}
+  - {fileID: 1923312807}
+  _gameoverScoreboardObj: {fileID: 0}
+  _LCRestart: {fileID: 1417983361}
+  _MPRestart: {fileID: 1453764967}
 --- !u!1 &882448449
 GameObject:
   m_ObjectHideFlags: 0
@@ -9361,13 +9376,13 @@ MonoBehaviour:
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 871195790}
-        m_TargetAssemblyTypeName: GameScript, Assembly-CSharp
+      - m_Target: {fileID: 1090501494}
+        m_TargetAssemblyTypeName: AudioManager, Assembly-CSharp
         m_MethodName: SliderPitch
-        m_Mode: 6
+        m_Mode: 2
         m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_ObjectArgument: {fileID: 904991747}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.UI.Slider, UnityEngine.UI
           m_IntArgument: 0
           m_FloatArgument: 0
           m_StringArgument: sliderClick
@@ -19205,13 +19220,13 @@ MonoBehaviour:
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 871195790}
-        m_TargetAssemblyTypeName: GameScript, Assembly-CSharp
+      - m_Target: {fileID: 1090501494}
+        m_TargetAssemblyTypeName: AudioManager, Assembly-CSharp
         m_MethodName: SliderPitch
-        m_Mode: 6
+        m_Mode: 2
         m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_ObjectArgument: {fileID: 1832027767}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.UI.Slider, UnityEngine.UI
           m_IntArgument: 0
           m_FloatArgument: 0
           m_StringArgument: sliderClick

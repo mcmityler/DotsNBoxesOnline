@@ -5,7 +5,11 @@ using UnityEngine.UI;
 using System.Security.Cryptography;
 using System.Linq;
 using TMPro;
+/*
 
+THIS SCRIPT HAS EVERYTHING TO DO WITH THE ACTUAL GAME LOOP
+by Tyler McMillan
+*/
 public class GameScript : MonoBehaviour
 {
 
@@ -20,29 +24,12 @@ public class GameScript : MonoBehaviour
     [SerializeField] private Slider _boardSizeSlider, _mpBoardSizeSlider; //slider on board setting panel to choose size of board // slider on multiplayer menu
     [SerializeField] private Text _boardSizeText, _mpBoardSizeText;//Text that displays slider count// text for slider on multiplayer menu
     [SerializeField] private Text _numberOfPlayerText, _mpLobbySizeText; //text that displays how many people are playing on settings screen // multiplayer lobby menu
-
-    // -------------------Gameover screen variables--------------------------
-    [SerializeField] private GameObject _gameoverObj; //gameover obj displays score screen and restart button
-    [SerializeField] private Text _winnerText; //text that displays who won the game or if it was a tie
-    [SerializeField] private GameObject _LCRestart, _MPRestart; //gameobjects that hold restart buttons for multiplayer or localplay
-    [SerializeField] private Text[] _playerScoreTextboxes; //player 1 - 4 score text boxes
-    [SerializeField] private Text[] _endgameScoreTextboxes; //endgame 1 - 4 place score text boxes
-    [SerializeField] private Animator _endgameScoreAnimator; //animator on engame score screen (changes size of scorebox depending on how many players)
-    [SerializeField] private Text[] _playerNameTextboxes; //player 1-4 name text boxes in score (during game score screen.)
     [SerializeField] private InputField[] _localPlayerNameInput; //player 1-4 name input for local games
     private string[] _playerNames = new string[] { "Player 1", "Player 2", "Player 3", "Player 4" }; //player 1-4 local names.
     [SerializeField] private Animator _localNameInputAnimator; //local name input animator (changes how many names on local input screen)
     private int _numberOfPlayers = 2; //how many players are allowed in your lobby
     private bool _localGame = true; //are you playing a local game 
-    private int[] _playerScores = new int[] { 0, 0, 0, 0 }; //player 1-4 scores (how many boxes have they collected)
-    private Color32[] _localPlayerColors = new Color32[] { new Color32(0, 16, 255, 255), new Color32(255, 0, 10, 255), new Color32(11, 255, 0, 255), new Color32(255, 246, 0, 255) }; //Local players colors on the board.
-    private Color32 _blue = new Color32(0, 16, 255, 255);
-    private Color32 _red = new Color32(255, 0, 10, 255);
-    private Color32 _green = new Color32(11, 255, 0, 255);
-    private Color32 _yellow = new Color32(255, 246, 0, 255);
-    private Color32 _purple = new Color32(225, 0, 255, 255);
-    private Color32 _orange = new Color32(255, 129, 0, 255);
-    private Color32 _lightblue = new Color32(0, 251, 255, 255);
+
     [SerializeField] private Animator _turnOrderAnimator; //turn order animator
     [SerializeField] private Animator _ingameScoreboardAnimator;
     private int _myPlayerNumberMP = 0; //turn number / what player you are in the lobby
@@ -50,6 +37,7 @@ public class GameScript : MonoBehaviour
     private int _turnRotation = 0; //placeholder for what turn you are currently on
     [SerializeField] private Text[] _playerTurnOrderText; //text boxes that display whos turn it is in the turn order 
     private GameBoard _gameBoard = new GameBoard(); //gameboard is every button, box and if the buttons have been clicked yet.
+    [SerializeField] private ScoreScript _scoreScript; //reference to score script
     private enum GAMESTATE
     { //Enum for game state / what point the game is currently at.
         STARTMENU,
@@ -71,6 +59,18 @@ public class GameScript : MonoBehaviour
 
     private GAMESTATE _currentGamestate = GAMESTATE.STARTMENU; //current gamestate of game
 
+
+    // -------------------------------------COLOUR VARIABLES----------------------------
+    [SerializeField] private TMP_Text _MPFadeTurnTextbox; //text box that fades letting player know its their turn
+    List<int> _redctr, _bluectr, _yellowctr, _greenctr, _purplectr, _orangectr, _lightbluectr; //different lists to count if a colour is taken, when setting other players colours in multiplayer
+    private Color32[] _playerColors = new Color32[] { new Color32(0, 16, 255, 255), new Color32(255, 0, 10, 255), new Color32(11, 255, 0, 255), new Color32(255, 246, 0, 255) }; // players colors on the board. (in order first - fourth player)
+    private Color32 _blue = new Color32(0, 16, 255, 255);
+    private Color32 _red = new Color32(255, 0, 10, 255);
+    private Color32 _green = new Color32(11, 255, 0, 255);
+    private Color32 _yellow = new Color32(255, 246, 0, 255);
+    private Color32 _purple = new Color32(225, 0, 255, 255);
+    private Color32 _orange = new Color32(255, 129, 0, 255);
+    private Color32 _lightblue = new Color32(0, 251, 255, 255);
     //----------------------------FUNCTIONS-------------------------------------
     void Awake()
     {
@@ -87,15 +87,15 @@ public class GameScript : MonoBehaviour
         }
         if (_currentGamestate == GAMESTATE.PLAYING || _currentGamestate == GAMESTATE.PLAYINGMULTIPLAYER)//if you are in the game play loop
         {
-            for (int i = 0; i < _numberOfPlayers; i++)
-            {
-                _playerScoreTextboxes[i].text = _playerScores[i].ToString(); //display score while game is running
-            }
+            _scoreScript.UpdateGameScore(_numberOfPlayers);
+            _ingameScoreboardAnimator.SetInteger("PlayerAmount", _numberOfPlayers);
+            _turnOrderAnimator.SetInteger("PlayerAmount", _numberOfPlayers); //Make sure that turn animation is on the correct anim size for player amount
             _turnOrderAnimator.SetInteger("PlayerTurn", _turnRotation); //Change turn animation depending on turn rotation
         }
         if (_currentGamestate == GAMESTATE.GAMEOVER) //if you are on the gameover screen
         {
-            DisplayWinner(true); //Display the winner 
+            _scoreScript.DisplayGameoverScore(_numberOfPlayers, _localGame);
+            _scoreScript.CalculateWinner(_numberOfPlayers, _myPlayerNumberMP, _playerNames);
         }
         if (_currentGamestate == GAMESTATE.LOBBYMENU)
         {//if you are on the multiplayer lobby menu screen
@@ -133,18 +133,17 @@ public class GameScript : MonoBehaviour
         _gameBoard = new GameBoard(); //create new gameboard 
         for (int i = 0; i < 4; i++)
         {
+            _scoreScript.RestartScore(i);
             _whosTurn[i] = 0; //reset turn order so you can re-randomize them.
-            _playerScores[i] = 0; //set scores to 0
-            _playerScoreTextboxes[i].text = _playerScores[i].ToString(); //display scores in text box
             if (!_localGame && m_resetNames)
             {
                 _playerNames[i] = "Player " + (i + 1).ToString();
             }
             _playerTurnOrderText[i].text = _playerNames[i]; //reset names of text boxes in the turn order so when it resets its back to players 1-4 in correct order
-            _playerTurnOrderText[i].color = _localPlayerColors[i]; //reset color of turn order text boxes ^^
+            _playerTurnOrderText[i].color = _playerColors[i]; //reset color of turn order text boxes ^^
 
         }
-        _gameoverObj.SetActive(false); //make gameover panel invisible.
+
         _turnRotation = 0; // go back to the start of turn order
         _localNameInputAnimator.SetInteger("PlayerAmount", _numberOfPlayers); //tell input animtor to show the correct number of players
         while (_turnOrderAnimator.GetInteger("PlayerTurn") != 0) //cycle through turn order until its back to 0, so it shows players 1-4 in order.
@@ -166,10 +165,10 @@ public class GameScript : MonoBehaviour
             _socketManager.SetSOCKETGameState(_currentGamestate.ToString()); //Change gamestate in socketmanager
             _boardSettingsObj.SetActive(true);  //make board settings visable
         }
-        _localPlayerColors[0] = _blue;
-        _localPlayerColors[1] = _red;
-        _localPlayerColors[2] = _green;
-        _localPlayerColors[3] = _yellow;
+        _playerColors[0] = _blue;
+        _playerColors[1] = _red;
+        _playerColors[2] = _green;
+        _playerColors[3] = _yellow;
     }
     public void AddPlayerButton() //Add button on board setting panel
     {
@@ -187,10 +186,10 @@ public class GameScript : MonoBehaviour
         if (_localGame) //if local
         {
             _localNameInputAnimator.SetInteger("PlayerAmount", _numberOfPlayers); //Animate how many player name inputs are visable
-
+            _ingameScoreboardAnimator.SetInteger("PlayerAmount", _numberOfPlayers);
+            _turnOrderAnimator.SetInteger("PlayerAmount", _numberOfPlayers); //Make sure that turn animation is on the correct anim size for player amount
         }
-        _turnOrderAnimator.SetInteger("PlayerAmount", _numberOfPlayers);//Animate how many players are shown in turn order
-        _ingameScoreboardAnimator.SetInteger("PlayerCount", _numberOfPlayers);
+
     }
     public void MinusPlayerButton()
     {
@@ -208,9 +207,9 @@ public class GameScript : MonoBehaviour
         if (_localGame)
         {
             _localNameInputAnimator.SetInteger("PlayerAmount", _numberOfPlayers); //Animate how many player name inputs are visable
+            _ingameScoreboardAnimator.SetInteger("PlayerAmount", _numberOfPlayers);
+            _turnOrderAnimator.SetInteger("PlayerAmount", _numberOfPlayers); //Make sure that turn animation is on the correct anim size for player amount
         }
-        _turnOrderAnimator.SetInteger("PlayerAmount", _numberOfPlayers);//Animate how many players are shown in turn order
-        _ingameScoreboardAnimator.SetInteger("PlayerCount", _numberOfPlayers);
     }
     public void GameStartButton()//start game button from board setting panel
     {
@@ -229,7 +228,7 @@ public class GameScript : MonoBehaviour
                 {  //check names arent left blank
 
                     _playerNames[i] = _localPlayerNameInput[i].text; //display name in text box
-                    _playerNameTextboxes[i].text = _playerNames[i] + ": "; //display names in current score screen.
+                    _scoreScript.UpdateUserNames(i, _playerNames[i]);//display names in current score screen.
                 }
                 ArrangeTurnOrder(i); //Arrange text and color of text boxes in bottom left
             }
@@ -239,7 +238,7 @@ public class GameScript : MonoBehaviour
     private void ArrangeTurnOrder(int m_turnOrder) //change names and color in turn order
     {
         _playerTurnOrderText[m_turnOrder].text = _playerNames[(_whosTurn[m_turnOrder]) - 1]; //Change text to correct name
-        _playerTurnOrderText[m_turnOrder].color = _localPlayerColors[(_whosTurn[m_turnOrder]) - 1]; //Change color of text box to players color
+        _playerTurnOrderText[m_turnOrder].color = _playerColors[(_whosTurn[m_turnOrder]) - 1]; //Change color of text box to players color
     }
     public void UpdateMPUsernames(string[] m_userList)
     {
@@ -248,7 +247,7 @@ public class GameScript : MonoBehaviour
         foreach (string s in m_userList)
         {
             _playerNames[m_counter] = m_userList[m_counter];
-            _playerNameTextboxes[m_counter].text = _playerNames[m_counter] + ": ";
+            _scoreScript.UpdateUserNames(m_counter, _playerNames[m_counter]);//display names in current score screen.
             //count after you do what you want 
             m_counter++;
         }
@@ -316,7 +315,7 @@ public class GameScript : MonoBehaviour
         }
     }
 
-    static int GetNextInt32(RNGCryptoServiceProvider rnd)
+    static int GetNextInt32(RNGCryptoServiceProvider rnd) //Function that randomizes turn order for local games.
     {
         byte[] randomInt = new byte[200];
         rnd.GetBytes(randomInt);
@@ -374,39 +373,33 @@ public class GameScript : MonoBehaviour
 
                 if (_whosTurn[_turnRotation] == 1)
                 {//FIRST PLAYER
-                    m_b.GetComponentInParent<Transform>().Find("Image").gameObject.GetComponent<Image>().color = _localPlayerColors[0];
-                    m_b.GetComponent<Image>().color = _localPlayerColors[0];
+                    m_b.GetComponentInParent<Transform>().Find("Image").gameObject.GetComponent<Image>().color = _playerColors[0];
+                    m_b.GetComponent<Image>().color = _playerColors[0];
                 }
                 else if (_whosTurn[_turnRotation] == 2)
                 {//SECOND PLAYER
-                    m_b.GetComponentInParent<Transform>().Find("Image").gameObject.GetComponent<Image>().color = _localPlayerColors[1];
-                    m_b.GetComponent<Image>().color = _localPlayerColors[1];
+                    m_b.GetComponentInParent<Transform>().Find("Image").gameObject.GetComponent<Image>().color = _playerColors[1];
+                    m_b.GetComponent<Image>().color = _playerColors[1];
                 }
                 else if (_whosTurn[_turnRotation] == 3)
                 {//THIRD PLAYER
-                    m_b.GetComponentInParent<Transform>().Find("Image").gameObject.GetComponent<Image>().color = _localPlayerColors[2];
-                    m_b.GetComponent<Image>().color = _localPlayerColors[2];
+                    m_b.GetComponentInParent<Transform>().Find("Image").gameObject.GetComponent<Image>().color = _playerColors[2];
+                    m_b.GetComponent<Image>().color = _playerColors[2];
                 }
                 else if (_whosTurn[_turnRotation] == 4)
                 {//FOURTH PLAYER
-                    m_b.GetComponentInParent<Transform>().Find("Image").gameObject.GetComponent<Image>().color = _localPlayerColors[3];
-                    m_b.GetComponent<Image>().color = _localPlayerColors[3];
+                    m_b.GetComponentInParent<Transform>().Find("Image").gameObject.GetComponent<Image>().color = _playerColors[3];
+                    m_b.GetComponent<Image>().color = _playerColors[3];
                 }
-                // m_b.GetComponent<Image>().color = _localPlayerColors[_whosTurn[_turnRotation]-1];
-                //ColorBlock m_tempColor = m_b.GetComponent<Button>().colors; //make temporary color block to change alpha of button to 100%
-                //m_tempColor.normalColor = m_b.GetComponent<Image>().color; //set normal color to what color button should be.
-                //m_b.GetComponent<Button>().colors = m_tempColor; //set buttons color block to temp color block
 
                 CheckBoxes(); //check if box needs to be filled in. (check if it is surrounded by 4 pressed buttons)
 
                 if (!_localGame && _youPressed) //if multi AND you pressed button send to other players
                 {
-
                     //send button to server
-
                     _socketManager.SendButtonMessage(m_b.name);
                 }
-                if (!_localGame && !_youPressed)
+                if (!_localGame && !_youPressed) //if multi and you got the button // tell server you got it to remove it from the checklist.
                 {
                     _socketManager.RecivedButtonMessage();
                 }
@@ -462,9 +455,9 @@ public class GameScript : MonoBehaviour
                 }
                 if (m_clicked[0] && m_clicked[1] && m_clicked[2] && m_clicked[3]) // if all buttons in temp m_clicked array were pressed do this.
                 {
-                    box.GetComponent<BoxScript>().ButtonSurrounded(_whosTurn[_turnRotation], _localPlayerColors[_whosTurn[_turnRotation] - 1], _blue, _red, _green, _yellow, _purple, _orange, _lightblue); //pass to box script to change its colour and depending on whos turn it is.
+                    box.GetComponent<BoxScript>().ButtonSurrounded(_whosTurn[_turnRotation], _playerColors[_whosTurn[_turnRotation] - 1], _blue, _red, _green, _yellow, _purple, _orange, _lightblue); //pass to box script to change its colour and depending on whos turn it is.
                     m_pointGained = true; //point is gained
-                    _playerScores[_whosTurn[_turnRotation] - 1]++;//add points to whoevers turns score.
+                    _scoreScript.AddScore(_whosTurn[_turnRotation] - 1);//add points to whoevers turns score.
 
                 }
 
@@ -503,182 +496,58 @@ public class GameScript : MonoBehaviour
         {
             _currentGamestate = GAMESTATE.GAMEOVER;
             _socketManager.SetSOCKETGameState(_currentGamestate.ToString()); //Change gamestate in socketmanager
-            _didYouWinMP = 0;
-            DisplayWinner(true);
-
-            _socketManager.SendGameoverMessage(_didYouWinMP);
-            for (int i = 0; i < _numberOfPlayers; i++)//Update score one last time!!
-            {
-                _playerScoreTextboxes[i].text = _playerScores[i].ToString();
-            }
+            _scoreScript.MPGameoverMessage(_socketManager, _numberOfPlayers, _localGame, _myPlayerNumberMP, _playerNames);
         }
         else
         {
             m_boxesLeftCheck = false; //reset for next check
         }
     }
-    private int _didYouWinMP = 0; //if 0 you lost, if 1 you won
-    private void DisplayWinner(bool m_displayScores) //Display Winner / Score screen scores.
+
+
+    public int GetEarlyWinner() //get early winner if a player leaves after 50% of a game, called through here to pass variables.
     {
-        if(m_displayScores){
-            _LCRestart.SetActive(false);
-            _MPRestart.SetActive(false);
-            if (_localGame)
-            {
-                _LCRestart.SetActive(true);
-            }
-            else if (!_localGame)
-            {
-                _MPRestart.SetActive(true);
-            }
-
-            _endgameScoreAnimator.SetInteger("NumberOfPlayers", _numberOfPlayers); //change size of score screen depending on player number
-            _gameoverObj.SetActive(true); //show the endgame score screen and the restart btn
-        }
-        int[] m_playerPlace = new int[] { 0, 0, 0, 0 }; //check what place each player finished in.
-        for (int i = 0; i < _numberOfPlayers; i++)
-        {
-            for (int x = 0; x < _numberOfPlayers; x++)
-            {
-                if (i != x)
-                {
-                    if (_playerScores[i] > _playerScores[x]) //if a player has a greater score than another, add points to their score.
-                    {
-                        m_playerPlace[i]++;
-                    }
-                }
-            }
-        }
-        int m_firstPlace = -1; //whos in first place, if its -1 no ones in first.
-        List<int> m_secondPlace = new List<int>();
-        List<int> m_thirdPlace = new List<int>();
-        List<int> m_fourthPlace = new List<int>();
-        for (int i = 0; i < _numberOfPlayers; i++)
-        {
-            //set players places
-            if (m_playerPlace[i] == 3)
-            {
-                m_firstPlace = i;
-                if (i == _myPlayerNumberMP && _numberOfPlayers == 4)
-                {
-                    _didYouWinMP = 1;
-                }
-            }
-            if (m_playerPlace[i] == 2)
-            {
-                m_secondPlace.Add(i);
-                if (i == _myPlayerNumberMP && _numberOfPlayers == 3)
-                {
-                    _didYouWinMP = 1;
-                }
-            }
-            if (m_playerPlace[i] == 1)
-            {
-                m_thirdPlace.Add(i);
-                if (i == _myPlayerNumberMP && _numberOfPlayers == 2)
-                {
-                    _didYouWinMP = 1;
-                }
-            }
-            if (m_playerPlace[i] == 0)
-            {
-                m_fourthPlace.Add(i);
-            }
-
-        }
-        if (m_firstPlace == -1) //if its a 4player game and -1 its a tie.
-        {
-            _winnerText.text = "Tie Game!";
-        }
-
-        int m_ctr = 0;
-        //check that you have a player in first (if 4 player)
-        if (m_firstPlace != -1)
-        {
-            _endgameScoreTextboxes[m_ctr].text = _playerNames[m_firstPlace] + "      Boxes: " + _playerScores[m_firstPlace];
-            _winnerText.text = _playerNames[m_firstPlace] + " is the Winner!";
-            _winnerNumber = m_firstPlace;
-            m_ctr++;
-        }
-        foreach (int second in m_secondPlace) //cycle through any players that tied for second
-        {
-            _endgameScoreTextboxes[m_ctr].text = _playerNames[second] + "      Boxes: " + _playerScores[second];
-            if (m_firstPlace == -1 && m_secondPlace.Count == 1)
-            {
-                _winnerText.text = _playerNames[second] + " is the Winner!";
-                _winnerNumber = second;
-            }
-            m_ctr++;
-        }
-        foreach (int third in m_thirdPlace)//cycle through any players that tied for third
-        {
-            _endgameScoreTextboxes[m_ctr].text = _playerNames[third] + "      Boxes: " + _playerScores[third];
-            if (m_secondPlace.Count == 0 && m_thirdPlace.Count == 1)
-            {
-                _winnerText.text = _playerNames[third] + " is the Winner!";
-                _winnerNumber = third;
-            }
-            m_ctr++;
-        }
-        foreach (int fourth in m_fourthPlace)//cycle through any players that tied for fourth
-        {
-            _endgameScoreTextboxes[m_ctr].text = _playerNames[fourth] + "      Boxes: " + _playerScores[fourth];
-            m_ctr++;
-        }
-
+        return _scoreScript.GetEarlyWinner(_boardSize, _numberOfPlayers, _myPlayerNumberMP, _playerNames);
     }
-    int _winnerNumber = -1;
-    public int GetEarlyWinner()//Get winner id if there is one and someone left early.
+    public int GetBoardSize()//getter for size of board
     {
-        int m_winnerNum = -1;
-        int totalScore = 0;
-        foreach(int m_score in _playerScores){
-            totalScore += m_score;
-        }
-        if(totalScore >= ((_boardSize * _boardSize)/2)) //if you have collected over half of the games squares change from -1 to something else.
-        {
-            DisplayWinner(false);
-            m_winnerNum = _winnerNumber;
-            
-        }
-        Debug.Log("the winner is " + m_winnerNum);
-        return m_winnerNum;
-        
-    }
-
-    public int GetPlayerSize()
-    { //get player size froms script while its private
-        return _numberOfPlayers;
-    }
-    /*public void SetPlayerSize(int m_playerSize)
-    { //get player size froms script while its private
-        _numberOfPlayers = m_playerSize;
-    }*/
-    public int GetBoardSize()
-    { //get size of board from script while its private
         return _boardSize;
     }
-    public void SetSizeofBoard(int m_sizeofboard)
-    { //set size of board from multiplayer
-        _boardSize = m_sizeofboard;
-        if (m_sizeofboard == -1)
-        {
-            _boardSize = (int)_mpBoardSizeSlider.value; //make board the size that the slider is at.
+    public void SetSizeofBoard(int m_sizeofboard)//setter for size of board
+    {
+        if (_localGame)
+        { //local game
+            _boardSize = (int)_boardSizeSlider.value;
         }
+        if (!_localGame)
+        { //multiplayer
+            _boardSize = m_sizeofboard; //change if value passed through server
+            if (m_sizeofboard == -1) //if hosting game get value from slider.
+            {
+                _boardSize = (int)_mpBoardSizeSlider.value; //MP slider.
+            }
+        }
+
+    }
+    public int GetMyPlayerNumber() //Getter for player number in multiplayer.
+    {
+        return _myPlayerNumberMP;
     }
     public void SetMyPlayerNumber(int m_myPlayerNumber) //get my turn number from the server (aka what player you are in the lobby)
     {
         _myPlayerNumberMP = m_myPlayerNumber;
     }
-    public int GetMyPlayerNumber(){
-        return _myPlayerNumberMP;
+
+    public int GetLobbySize() //getter lobby size.
+    {
+        return _numberOfPlayers;
     }
-    public void MPSetLobbySize(int[] m_turnOrder)
+    public void MPSetLobbySize(int[] m_turnOrder) //setter lobby size 
     {
         _numberOfPlayers = m_turnOrder.Length;
 
     }
-    public void MPSetTurnOrder(int[] m_turnorder) //Get the turn order from the server and set it
+    public void MPSetTurnOrder(int[] m_turnorder) //Setter for turn order in multiplayer
     {
 
         _numberOfPlayers = m_turnorder.Count();
@@ -688,15 +557,12 @@ public class GameScript : MonoBehaviour
             //Set turn order names...
             ArrangeTurnOrder(i);
         }
-        _turnOrderAnimator.SetInteger("PlayerAmount", _numberOfPlayers);//Animate how many players are shown in turn order
-        _ingameScoreboardAnimator.SetInteger("PlayerCount", _numberOfPlayers);
-        Debug.Log("change animations");
 
     }
-    [SerializeField] private TMP_Text _MPFadeTurnTextbox;
-    List<int> _redctr,_bluectr,_yellowctr,_greenctr,_purplectr,_orangectr,_lightbluectr;
-    public void MPSetColour(string[] m_colourlist, string m_mycolour)
-    { //sets colours based on what your colour is and makes sure no one else has the same colour.
+
+    public void MPSetColour(string[] m_colourlist, string m_mycolour)// Set Player colours so no one has the same colour
+    {
+        //reset counters
         _redctr = new List<int>();
         _bluectr = new List<int>();
         _yellowctr = new List<int>();
@@ -704,185 +570,148 @@ public class GameScript : MonoBehaviour
         _purplectr = new List<int>();
         _orangectr = new List<int>();
         _lightbluectr = new List<int>();
-        Debug.Log(_myPlayerNumberMP);
 
-        int m_playerNum = _myPlayerNumberMP - 1;
-        int m_ctr = 0;
+        int m_playerNum = _myPlayerNumberMP - 1; //my player number - 1 (so it matches 0,1,2,3)
+        int m_playerctr = 0; //counter to count what player you are on
 
+        //count & set each players colours to see if there are any duplicates
         foreach (string colour in m_colourlist)
         {
             switch (colour)
             {
                 case "red":
-                    _redctr.Add(m_ctr);
-                    _localPlayerColors[m_ctr] = _red;
+                    _redctr.Add(m_playerctr);
+                    _playerColors[m_playerctr] = _red;
+                    _MPFadeTurnTextbox.color = _red;
                     break;
                 case "blue":
-                    _bluectr.Add(m_ctr);
-                    _localPlayerColors[m_ctr] = _blue;
+                    _bluectr.Add(m_playerctr);
+                    _playerColors[m_playerctr] = _blue;
+                    _MPFadeTurnTextbox.color = _blue;
                     break;
                 case "yellow":
-                    _yellowctr.Add(m_ctr);
-                    _localPlayerColors[m_ctr] = _yellow;
+                    _yellowctr.Add(m_playerctr);
+                    _playerColors[m_playerctr] = _yellow;
+                    _MPFadeTurnTextbox.color = _yellow;
                     break;
                 case "green":
-                    _localPlayerColors[m_ctr] = _green;
-                    _greenctr.Add(m_ctr);
+                    _playerColors[m_playerctr] = _green;
+                    _MPFadeTurnTextbox.color = _green;
+                    _greenctr.Add(m_playerctr);
                     break;
                 case "purple":
-                    _localPlayerColors[m_ctr] = _purple;
-                    _purplectr.Add(m_ctr);
+                    _playerColors[m_playerctr] = _purple;
+                    _MPFadeTurnTextbox.color = _purple;
+                    _purplectr.Add(m_playerctr);
                     break;
                 case "orange":
-                    _localPlayerColors[m_ctr] = _orange;
-                    _orangectr.Add(m_ctr);
+                    _playerColors[m_playerctr] = _orange;
+                    _MPFadeTurnTextbox.color = _orange;
+                    _orangectr.Add(m_playerctr);
                     break;
                 case "lightblue":
-                    _localPlayerColors[m_ctr] = _lightblue;
-                    _lightbluectr.Add(m_ctr);
+                    _playerColors[m_playerctr] = _lightblue;
+                    _MPFadeTurnTextbox.color = _lightblue;
+                    _lightbluectr.Add(m_playerctr);
                     break;
             }
-            m_ctr++;
+            m_playerctr++;
         }
-        Debug.Log(_numberOfPlayers + " many players in this game");
 
-        //-------------------------------------- 3 PLAYERS && 4 PLAYERS -------------------------------------------
-        if (_numberOfPlayers == 2 || _numberOfPlayers == 3 || _numberOfPlayers == 4)
+
+        int m_colourCtr = 0; //holds count of how many of one colour
+
+        if (_redctr.Count() >= 2) //if there is a duplicate colour
         {
-            int m_numCtr = 0;
-            if (_redctr.Count() >= 2)
+            m_colourCtr = _redctr.Count();
+            foreach (int x in _redctr)
             {
-                if (_redctr.Contains(m_playerNum))
+                if (m_colourCtr > 1 && x != m_playerNum) //change colour to different colour if its not my colour (dont want to switch my own colour to something i dont want)
                 {
-                    _localPlayerColors[m_playerNum] = _red;//change to my colour
-                    _MPFadeTurnTextbox.color = _red; //change my turn text to my colour (fading)
-                    //m_redctr.Remove(m_playerNum);
-                }
-                m_numCtr = _redctr.Count();
-                foreach (int x in _redctr)
-                {
-                    if (m_numCtr > 1 && x != m_playerNum)
-                    {
-                        SwitchColour(x);
-                        m_numCtr--;
+                    SwitchColour(x);
+                    m_colourCtr--;
 
-                    }
                 }
             }
-            if (_bluectr.Count() >= 2)
+        }
+        if (_bluectr.Count() >= 2)
+        {
+            m_colourCtr = _bluectr.Count();
+            foreach (int x in _bluectr)
             {
-                if (_bluectr.Contains(m_playerNum))
-                {
-                    _localPlayerColors[m_playerNum] = _blue;//change to my colour
-                    _MPFadeTurnTextbox.color = _blue; //change my turn text to my colour (fading)
-                                                      //m_redctr.Remove(m_playerNum);
-                }
-                m_numCtr = _bluectr.Count();
-                foreach (int x in _bluectr)
-                {
-                    if (m_numCtr > 1 && x != m_playerNum)
-                    { //if its not my number and its in the red ctr still.
-                        SwitchColour(x);
-                        m_numCtr--;
-                    }
-                }
-
-            }
-            if (_yellowctr.Count() >= 2)
-            {
-                if (_yellowctr.Contains(m_playerNum))
-                {
-                    _localPlayerColors[m_playerNum] = _yellow;//change to my colour
-                    _MPFadeTurnTextbox.color = _yellow; //change my turn text to my colour (fading)
-                                                        //m_redctr.Remove(m_playerNum);
-                }
-                m_numCtr = _yellowctr.Count();
-                foreach (int x in _yellowctr)
-                {
-                    if (m_numCtr > 1 && x != m_playerNum)//if its not my number and greater then 1 change to different colour 
-                    {
-                        SwitchColour(x);
-                        m_numCtr--;
-
-                    }
-                }
-            }
-            if (_greenctr.Count() >= 2)
-            {
-                if (_greenctr.Contains(m_playerNum))
-                {
-                    _localPlayerColors[m_playerNum] = _green;//change to my colour
-                    _MPFadeTurnTextbox.color = _green; //change my turn text to my colour (fading)
-                                                       //m_redctr.Remove(m_playerNum);
-                }
-                m_numCtr = _greenctr.Count();
-                foreach (int x in _greenctr)
-                {
-                    if (m_numCtr > 1 && x != m_playerNum)
-                    { //if its not my number and its in the red ctr still.
-                        SwitchColour(x);
-                        m_numCtr--;
-                    }
-                }
-            }
-            if (_purplectr.Count() >= 2)
-            {
-                if (_purplectr.Contains(m_playerNum))
-                {
-                    _localPlayerColors[m_playerNum] = _purple;//change to my colour
-                    _MPFadeTurnTextbox.color = _purple; //change my turn text to my colour (fading)
-                                                        //m_redctr.Remove(m_playerNum);
-                }
-                m_numCtr = _purplectr.Count();
-                foreach (int x in _purplectr)
-                {
-                    if (m_numCtr > 1 && x != m_playerNum)
-                    { //if its not my number and its in the red ctr still.
-                        SwitchColour(x);
-                        m_numCtr--;
-                    }
-                }
-            }
-            if (_orangectr.Count() >= 2)
-            {
-                if (_orangectr.Contains(m_playerNum))
-                {
-                    _localPlayerColors[m_playerNum] = _orange;//change to my colour
-                    _MPFadeTurnTextbox.color = _orange; //change my turn text to my colour (fading)
-                                                        //m_redctr.Remove(m_playerNum);
-                }
-                m_numCtr = _orangectr.Count();
-                foreach (int x in _orangectr)
-                {
-                    if (m_numCtr > 1 && x != m_playerNum)
-                    { //if its not my number and its in the red ctr still.
-                        SwitchColour(x);
-                        m_numCtr--;
-                    }
-                }
-            }
-            if (_lightbluectr.Count() >= 2)
-            {
-                if (_lightbluectr.Contains(m_playerNum))
-                {
-                    _localPlayerColors[m_playerNum] = _lightblue;//change to my colour
-                    _MPFadeTurnTextbox.color = _lightblue; //change my turn text to my colour (fading)
-                                                           //m_redctr.Remove(m_playerNum);
-                }
-                m_numCtr = _lightbluectr.Count();
-                foreach (int x in _lightbluectr)
-                {
-                    if (m_numCtr > 1 && x != m_playerNum)
-                    { //if its not my number and its in the red ctr still.
-                        SwitchColour(x);
-                        m_numCtr--;
-                    }
+                if (m_colourCtr > 1 && x != m_playerNum)
+                { //if its not my number and its in the red ctr still.
+                    SwitchColour(x);
+                    m_colourCtr--;
                 }
             }
 
         }
+        if (_yellowctr.Count() >= 2)
+        {
+            m_colourCtr = _yellowctr.Count();
+            foreach (int x in _yellowctr)
+            {
+                if (m_colourCtr > 1 && x != m_playerNum)//if its not my number and greater then 1 change to different colour 
+                {
+                    SwitchColour(x);
+                    m_colourCtr--;
+
+                }
+            }
+        }
+        if (_greenctr.Count() >= 2)
+        {
+            m_colourCtr = _greenctr.Count();
+            foreach (int x in _greenctr)
+            {
+                if (m_colourCtr > 1 && x != m_playerNum)
+                { //if its not my number and its in the red ctr still.
+                    SwitchColour(x);
+                    m_colourCtr--;
+                }
+            }
+        }
+        if (_purplectr.Count() >= 2)
+        {
+            m_colourCtr = _purplectr.Count();
+            foreach (int x in _purplectr)
+            {
+                if (m_colourCtr > 1 && x != m_playerNum)
+                { //if its not my number and its in the red ctr still.
+                    SwitchColour(x);
+                    m_colourCtr--;
+                }
+            }
+        }
+        if (_orangectr.Count() >= 2)
+        {
+            m_colourCtr = _orangectr.Count();
+            foreach (int x in _orangectr)
+            {
+                if (m_colourCtr > 1 && x != m_playerNum)
+                { //if its not my number and its in the red ctr still.
+                    SwitchColour(x);
+                    m_colourCtr--;
+                }
+            }
+        }
+        if (_lightbluectr.Count() >= 2)
+        {
+            m_colourCtr = _lightbluectr.Count();
+            foreach (int x in _lightbluectr)
+            {
+                if (m_colourCtr > 1 && x != m_playerNum)
+                { //if its not my number and its in the red ctr still.
+                    SwitchColour(x);
+                    m_colourCtr--;
+                }
+            }
+        }
+
+
     }
-    public void UsernameTextColour(Text m_usernameText, string m_mycolour)
+    public void UsernameTextColour(Text m_usernameText, string m_mycolour) //update username text colour 
     {
         switch (m_mycolour)
         {
@@ -909,48 +738,49 @@ public class GameScript : MonoBehaviour
                 break;
         }
     }
-    public void SwitchColour(int m_playerToSwitch)
+    public void SwitchColour(int m_playerToSwitch) //switch opponents colours if they are the same.
     {
         //Could randomize it ??
+
         if (_redctr.Count() == 0)
         { //if there are no red players, make it red
-            _localPlayerColors[m_playerToSwitch] = _red;
+            _playerColors[m_playerToSwitch] = _red;
             _redctr.Add(m_playerToSwitch);
 
         }
         else if (_bluectr.Count() == 0)
         {//if there are no blue players, make it blue
-            _localPlayerColors[m_playerToSwitch] = _blue;
+            _playerColors[m_playerToSwitch] = _blue;
             _bluectr.Add(m_playerToSwitch);
 
         }
         else if (_greenctr.Count() == 0)
         {//if there are no green players, make it green
-            _localPlayerColors[m_playerToSwitch] = _green;
+            _playerColors[m_playerToSwitch] = _green;
             _greenctr.Add(m_playerToSwitch);
 
         }
         else if (_yellowctr.Count() == 0)
         { //if there are no yellow players, make it red
-            _localPlayerColors[m_playerToSwitch] = _yellow;
+            _playerColors[m_playerToSwitch] = _yellow;
             _yellowctr.Add(m_playerToSwitch);
 
         }
         else if (_purplectr.Count() == 0)
         { //if there are no yellow players, make it red
-            _localPlayerColors[m_playerToSwitch] = _purple;
+            _playerColors[m_playerToSwitch] = _purple;
             _purplectr.Add(m_playerToSwitch);
 
         }
         else if (_orangectr.Count() == 0)
         { //if there are no yellow players, make it red
-            _localPlayerColors[m_playerToSwitch] = _orange;
+            _playerColors[m_playerToSwitch] = _orange;
             _orangectr.Add(m_playerToSwitch);
 
         }
         else if (_lightbluectr.Count() == 0)
         { //if there are no yellow players, make it red
-            _localPlayerColors[m_playerToSwitch] = _lightblue;
+            _playerColors[m_playerToSwitch] = _lightblue;
             _lightbluectr.Add(m_playerToSwitch);
 
         }
@@ -974,26 +804,7 @@ public class GameScript : MonoBehaviour
     {
         ButtonClicked(GameObject.Find(m_bName).GetComponent<Button>(), false); //false to say you didnt press it you got it from the server. 
     }
-    public void HideScoreBoard()
-    {
-        _gameoverObj.SetActive(false);
-    }
-    public void SliderPitch(bool m_local)
-    {
-        int m_slider = 0;
-        if (m_local)
-        {
-            m_slider = (int)_boardSizeSlider.value;
-
-        }
-        if (!m_local)
-        {
-            m_slider = (int)_mpBoardSizeSlider.value;
-
-        }
-        float m_pitch = m_slider * 0.25f;
-        FindObjectOfType<AudioManager>().PlayWithPitch("sliderClick", m_pitch);
-    }
+    
 
 
     // -------------------------CLASSES ---------------------------------------
