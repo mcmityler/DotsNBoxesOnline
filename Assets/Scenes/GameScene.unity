@@ -9012,7 +9012,7 @@ MonoBehaviour:
   - {fileID: 446714763}
   - {fileID: 1994382752}
   - {fileID: 1923312807}
-  _gameoverScoreboardObj: {fileID: 0}
+  _gameoverScoreboardObj: {fileID: 659909303}
   _LCRestart: {fileID: 1417983361}
   _MPRestart: {fileID: 1453764967}
 --- !u!1 &882448449
