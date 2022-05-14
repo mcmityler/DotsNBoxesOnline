@@ -45,4 +45,20 @@ public class TabScript : MonoBehaviour
     public void PasswordSelected() {
         _loginScreenInputCounter = 1;
     }
+
+    public void PasswordVisibleToggle(Toggle m_passwordVisibility)
+    {
+        if (m_passwordVisibility.isOn)
+        {
+            _passwordInput.contentType = TMP_InputField.ContentType.Password;
+        }
+        else
+        {
+            _passwordInput.contentType = TMP_InputField.ContentType.Standard;
+        }
+        PasswordSelected();
+        SelectLoginInput();
+        _passwordInput.caretPosition = _passwordInput.text.Length;
+        //_passwordInput.MoveTextEnd(false);
+    }
 }

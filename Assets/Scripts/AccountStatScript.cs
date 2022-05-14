@@ -14,7 +14,7 @@ public class AccountStatScript : MonoBehaviour
     public void UpdateAccountStats(string m_user, int m_wins, int m_matchesTotal){
         float m_winLossRatio = 0; //float that holds the win loss ratio
         if(m_matchesTotal != 0){ //make sure you arent trying to divide 0/0
-            m_winLossRatio = (m_wins/m_matchesTotal) * 100;//find win loss ratio %
+            m_winLossRatio = ((float)m_wins/(float)m_matchesTotal) * 100;//find win loss ratio % && need to convert int into float or it wont get decimals
         }
         _usernameTextbox.text = m_user; //update text in user text
         _winsTextbox.text = m_wins.ToString();//update text in win text

@@ -11,7 +11,7 @@ public class AudioManager : MonoBehaviour
 {
     public Sound[] sounds; //list of sounds in game
     public static AudioManager instance; //instance of audio manager to make sure there is only one in game
-    private SocketManager _socketManager;
+    private TabScript _tabScript;
     //Initialization
     void Awake()
     {
@@ -34,7 +34,7 @@ public class AudioManager : MonoBehaviour
             s.source.pitch = s.pitch;
             s.source.loop = s.loop;
         }
-        _socketManager = FindObjectOfType<SocketManager>();
+        _tabScript = FindObjectOfType<TabScript>();
     }
 
 
@@ -82,6 +82,6 @@ public class AudioManager : MonoBehaviour
         {
             Play("uncheckSound");
         }
-        _socketManager.PasswordVisibleToggle(_passwordCheckbox); //change textbox visibility 
+        _tabScript.PasswordVisibleToggle(_passwordCheckbox); //change textbox visibility 
     }
 }
