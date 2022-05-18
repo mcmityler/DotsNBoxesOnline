@@ -18,4 +18,7 @@ public class HyperLinkScript : MonoBehaviour
     public void itchioURL(){
         Application.OpenURL("https://mcmityler.itch.io/");
     }
+    public void musicURL(){
+        Application.OpenURL("https://www.playonloop.com/");
+    }
 }

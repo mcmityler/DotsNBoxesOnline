@@ -84,6 +84,7 @@ public class GameScript : MonoBehaviour
         {
             _boardSize = (int)_boardSizeSlider.value; //make board the size that the slider is at.
             _boardSizeText.text = (_boardSizeSlider.value).ToString(); //make board size text on board settings panel update
+            _localNameInputAnimator.SetInteger("PlayerAmount", _numberOfPlayers); //tell input animtor to show the correct number of players
         }
         if (_currentGamestate == GAMESTATE.PLAYING || _currentGamestate == GAMESTATE.PLAYINGMULTIPLAYER)//if you are in the game play loop
         {
@@ -145,7 +146,6 @@ public class GameScript : MonoBehaviour
         }
 
         _turnRotation = 0; // go back to the start of turn order
-        _localNameInputAnimator.SetInteger("PlayerAmount", _numberOfPlayers); //tell input animtor to show the correct number of players
         while (_turnOrderAnimator.GetInteger("PlayerTurn") != 0) //cycle through turn order until its back to 0, so it shows players 1-4 in order.
         {
             int m_i = _turnOrderAnimator.GetInteger("PlayerTurn");

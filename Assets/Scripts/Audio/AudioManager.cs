@@ -12,6 +12,8 @@ public class AudioManager : MonoBehaviour
     public Sound[] sounds; //list of sounds in game
     public static AudioManager instance; //instance of audio manager to make sure there is only one in game
     private TabScript _tabScript;
+    private bool _soundMuted = false; //Should you hear sounds (for sound toggle)
+    private bool _musicMuted = true; //should you hear Background music (start on true so that you can toggle false, on awake)
     //Initialization
     void Awake()
     {
@@ -35,35 +37,44 @@ public class AudioManager : MonoBehaviour
             s.source.loop = s.loop;
         }
         _tabScript = FindObjectOfType<TabScript>();
+        ToggleBackgroundMusic();
     }
 
 
     //FindObjectOfType<AudioManager>().Play("AUDIOCLIPNAME");
     public void Play(string name) //called from other scripts to play audio 
     {
-        Sound s = Array.Find(sounds, sound => sound.name == name);
-        if (s == null)
-        {
-            Debug.LogWarning("Sound: " + name + " was not found!");
-            return;
+        if (_soundMuted == false || name == "backgroundMusic") //check if the sounds are muted (through sound toggle)
+            {
+            Sound s = Array.Find(sounds, sound => sound.name == name);
+            if (s == null)
+            {
+                Debug.LogWarning("Sound: " + name + " was not found!");
+                return;
+            }
+            s.source.Play();
         }
-        s.source.Play();
     }
 
     public void PlayWithPitch(string name, float pitchNum) //called from other scripts to play audio 
     {
-        Sound s = Array.Find(sounds, sound => sound.name == name);
-
-        s.source.volume = s.volume;
-        s.pitch = pitchNum;
-        s.source.pitch = s.pitch;
-        Debug.Log(s.pitch);
-        if (s == null)
+        if (_soundMuted == false)//check if the sounds are muted (through sound toggle)
         {
-            Debug.LogWarning("Sound: " + name + " was not found!");
-            return;
+
+
+            Sound s = Array.Find(sounds, sound => sound.name == name);
+
+            s.source.volume = s.volume;
+            s.pitch = pitchNum;
+            s.source.pitch = s.pitch;
+            Debug.Log(s.pitch);
+            if (s == null)
+            {
+                Debug.LogWarning("Sound: " + name + " was not found!");
+                return;
+            }
+            s.source.Play();
         }
-        s.source.Play();
     }
     public void SliderPitch(Slider m_slider) //change & play slider pitch depending on what value the slider is at
     {
@@ -83,5 +94,23 @@ public class AudioManager : MonoBehaviour
             Play("uncheckSound");
         }
         _tabScript.PasswordVisibleToggle(_passwordCheckbox); //change textbox visibility 
+    }
+    public void ToggleSound()
+    {
+        _soundMuted = !_soundMuted;
+    }
+    public void ToggleBackgroundMusic(){
+        _musicMuted = !_musicMuted;
+        if(_musicMuted == false){
+            Play("backgroundMusic");
+        }else{
+            Sound s = Array.Find(sounds, sound => sound.name == "backgroundMusic");
+            if (s == null)
+            {
+                Debug.LogWarning("Sound: backgroundMusic was not found!");
+                return;
+            }
+            s.source.Pause();
+        }
     }
 }
