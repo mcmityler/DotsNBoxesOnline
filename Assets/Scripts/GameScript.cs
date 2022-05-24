@@ -717,24 +717,45 @@ public class GameScript : MonoBehaviour
         {
             case "blue":
                 m_usernameText.color = _blue;
+                foreach(GameObject neonButtonorText in GameObject.FindGameObjectsWithTag("Neon")){
+                    neonButtonorText.GetComponent<NeonButtonScript>().ChangeColour(_blue);
+                }
                 break;
             case "red":
                 m_usernameText.color = _red;
+                foreach(GameObject neonButtonorText in GameObject.FindGameObjectsWithTag("Neon")){
+                    neonButtonorText.GetComponent<NeonButtonScript>().ChangeColour(_red);
+                }
                 break;
             case "green":
                 m_usernameText.color = _green;
+                foreach(GameObject neonButtonorText in GameObject.FindGameObjectsWithTag("Neon")){
+                    neonButtonorText.GetComponent<NeonButtonScript>().ChangeColour(_green);
+                }
                 break;
             case "yellow":
                 m_usernameText.color = _yellow;
+                foreach(GameObject neonButtonorText in GameObject.FindGameObjectsWithTag("Neon")){
+                    neonButtonorText.GetComponent<NeonButtonScript>().ChangeColour(_yellow);
+                }
                 break;
             case "purple":
                 m_usernameText.color = _purple;
+                foreach(GameObject neonButtonorText in GameObject.FindGameObjectsWithTag("Neon")){
+                    neonButtonorText.GetComponent<NeonButtonScript>().ChangeColour(_purple);
+                }
                 break;
             case "orange":
                 m_usernameText.color = _orange;
+                foreach(GameObject neonButtonorText in GameObject.FindGameObjectsWithTag("Neon")){
+                    neonButtonorText.GetComponent<NeonButtonScript>().ChangeColour(_orange);
+                }
                 break;
             case "lightblue":
                 m_usernameText.color = _lightblue;
+                foreach(GameObject neonButtonorText in GameObject.FindGameObjectsWithTag("Neon")){
+                    neonButtonorText.GetComponent<NeonButtonScript>().ChangeColour(_lightblue);
+                }
                 break;
         }
     }

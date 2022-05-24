@@ -9,6 +9,8 @@ TagManager:
   - checked
   - button
   - ColourButton
+  - MainTitle
+  - Neon
   layers:
   - Default
   - TransparentFX
@@ -16,7 +18,7 @@ TagManager:
   - 
   - Water
   - UI
-  - 
+  - NeonPostProcessing
   - 
   - 
   - 

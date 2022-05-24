@@ -257,6 +257,7 @@ public class SocketManager : MonoBehaviour
             {
                 colourButton.GetComponent<Image>().sprite = _unselectedColour;
             }
+            
             GameObject.Find(_myColour + "ColourButton").GetComponent<Image>().sprite = _selectedColour;
             _gameScript.UsernameTextColour(_usernameText, _myColour);
 
@@ -284,10 +285,14 @@ public class SocketManager : MonoBehaviour
             _correctUandP = false;
             if (_myUserID != "null")
             {
-
+                _passwordInputText.text = ""; // set password input box to nothing
+                _usernameInputText.text = ""; //set username input box to nothing
                 _menuScript.LobbyMenuSceenButton();
                 FindObjectOfType<AudioManager>().Play("successSound");
                 _accountStatScript.UpdateAccountStats(_myUserID, _myWins, _myMatches);
+                _usernameText.text = _myUserID;
+                _gameScript.UsernameTextColour(_usernameText, _myColour);
+                _accountDetailsObj.SetActive(true);
 
             }
             else
@@ -301,12 +306,6 @@ public class SocketManager : MonoBehaviour
             _incorrectUandP = false;
             _errorUserPassText.text = "Username or Password was entered incorrectly";
             FindObjectOfType<AudioManager>().Play("failSound");
-        }
-        if (_myUserID != "null")
-        {
-            _usernameText.text = _myUserID;
-            _gameScript.UsernameTextColour(_usernameText, _myColour);
-            _accountDetailsObj.SetActive(true);
         }
         if (_myUserID == "null")
         {
@@ -409,6 +408,7 @@ public class SocketManager : MonoBehaviour
                     _currentGamestate = GAMESTATE.JOINSCREEN;
                     _gameScript.SetGSGameState(_currentGamestate.ToString());
                     _joinedGame = true;
+                    _lobbyKeyInput.text = "";
                     //}
 
                 }
