@@ -23,13 +23,18 @@ public class NeonButtonScript : MonoBehaviour, IPointerEnterHandler, IPointerExi
     }
     public void InitColour(){
         _backgroundBlurImg.GetComponent<Image>().color =_myColour;
+        if(_ButtonText != null){
         _ButtonText.GetComponent<TMP_Text>().fontSharedMaterial.SetColor(ShaderUtilities.ID_GlowColor, _myColour);// Instead of using a string to access FFthe material property, you could use the ShaderUtilities class I provide
-        if(_TitleText != null){
-            _TitleText.GetComponent<TMP_Text>().fontSharedMaterial.SetColor(ShaderUtilities.ID_GlowColor, _myColour);// Instead of using a string to access FFthe material property, you could use the ShaderUtilities class I provide
-        }
-        
         // Since some of the material properties can affect the mesh (size) you would need to update the padding values.
         _ButtonText.GetComponent<TMP_Text>().UpdateMeshPadding();
+        }
+        if(_TitleText != null){
+            _TitleText.GetComponent<TMP_Text>().fontSharedMaterial.SetColor(ShaderUtilities.ID_GlowColor, _myColour);// Instead of using a string to access FFthe material property, you could use the ShaderUtilities class I provide
+            // Since some of the material properties can affect the mesh (size) you would need to update the padding values.
+            _TitleText.GetComponent<TMP_Text>().UpdateMeshPadding();
+        }
+        
+        
     }
     public void ChangeColour(Color32 m_newColour){
         _myColour = m_newColour;
@@ -46,19 +51,24 @@ public class NeonButtonScript : MonoBehaviour, IPointerEnterHandler, IPointerExi
     //Do this when the cursor enters the rect area of this selectable UI object.
     public void OnPointerEnter(PointerEventData eventData)
     {
+        if(_ButtonText != null){
         Debug.Log("The cursor entered the selectable UI element.");
         _backgroundBlurImg.GetComponent<Image>().color =_invertedColour;
+        
         _ButtonText.GetComponent<TMP_Text>().fontSharedMaterial.SetColor(ShaderUtilities.ID_GlowColor, _invertedColour);// Instead of using a string to access FFthe material property, you could use the ShaderUtilities class I provide
         // Since some of the material properties can affect the mesh (size) you would need to update the padding values.
         _ButtonText.GetComponent<TMP_Text>().UpdateMeshPadding();
+        }
     }
     public void OnPointerExit(PointerEventData eventData)
     {
+        if(_ButtonText != null){
         Debug.Log("The cursor Left the selectable UI element.");
         _backgroundBlurImg.GetComponent<Image>().color = _myColour;
         _ButtonText.GetComponent<TMP_Text>().fontSharedMaterial.SetColor(ShaderUtilities.ID_GlowColor, _myColour);// Instead of using a string to access FFthe material property, you could use the ShaderUtilities class I provide
         // Since some of the material properties can affect the mesh (size) you would need to update the padding values.
         _ButtonText.GetComponent<TMP_Text>().UpdateMeshPadding();
+        }
     }
     public void OnButtonClick(){
         InitColour();
