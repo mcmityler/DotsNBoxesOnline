@@ -22,9 +22,9 @@ public class GameScript : MonoBehaviour
     [SerializeField] private GameObject _backgroundObj; //Background panel of the entire canvas (also where the gameboard is drawn)
     [SerializeField] private GameObject _boardSettingsObj, _localPlayerNamesObj; //Settings panel for picking board size and player amount //local player name inputs obj (toggles visibility)
     [SerializeField] private Slider _boardSizeSlider, _mpBoardSizeSlider; //slider on board setting panel to choose size of board // slider on multiplayer menu
-    [SerializeField] private Text _boardSizeText, _mpBoardSizeText;//Text that displays slider count// text for slider on multiplayer menu
-    [SerializeField] private Text _numberOfPlayerText, _mpLobbySizeText; //text that displays how many people are playing on settings screen // multiplayer lobby menu
-    [SerializeField] private InputField[] _localPlayerNameInput; //player 1-4 name input for local games
+    [SerializeField] private TMP_Text _boardSizeText, _mpBoardSizeText;//Text that displays slider count// text for slider on multiplayer menu
+    [SerializeField] private TMP_Text _numberOfPlayerText, _mpLobbySizeText; //text that displays how many people are playing on settings screen // multiplayer lobby menu
+    [SerializeField] private TMP_InputField[] _localPlayerNameInput; //player 1-4 name input for local games
     private string[] _playerNames = new string[] { "Player 1", "Player 2", "Player 3", "Player 4" }; //player 1-4 local names.
     [SerializeField] private Animator _localNameInputAnimator; //local name input animator (changes how many names on local input screen)
     private int _numberOfPlayers = 2; //how many players are allowed in your lobby

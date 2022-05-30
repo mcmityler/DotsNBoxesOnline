@@ -264,11 +264,12 @@ public class SocketManager : MonoBehaviour
             _gameScript.UsernameTextColour(_usernameText, _myColour);
 
         }
-        if(_tempGameState != _currentGamestate){ //check if the gamestate changed, and then update neon buttons if they need to be updated.
+    }
+    void LateUpdate(){
+         if(_tempGameState != _currentGamestate){ //check if the gamestate changed, and then update neon buttons if they need to be updated.
             _tempGameState = _currentGamestate;
             _gameScript.ButtonNeonColour(_myColour); //Update Neon button colours.. I do this because if a button is not active but needs to change colour it wont change until you switch panels.
         }
-        
     }
     void LoginRegisterUpdateLoop()
     {

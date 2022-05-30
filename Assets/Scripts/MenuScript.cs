@@ -46,8 +46,7 @@ public class MenuScript : MonoBehaviour
     }
     public void BacktoMainButton()//called by back buttons on every screen ==> goes to main menu.
     {
-        _socketManager.SetSOCKETGameState("STARTMENU");
-        _gameScript.SetGSGameState("STARTMENU");
+        
         _creditScreenObj.SetActive(false);
         _helpScreenObj.SetActive(false);
         _loginScreenObj.SetActive(false);
@@ -55,7 +54,8 @@ public class MenuScript : MonoBehaviour
         _connectionObj.SetActive(false);
 
         _mainMenuObj.SetActive(true);
-
+        _socketManager.SetSOCKETGameState("STARTMENU");
+        _gameScript.SetGSGameState("STARTMENU");
         _socketManager.OnDestroy(); //destroy UDP if it is running and you go back to main menu
     }
     public void QuitButton()//called by quit button on main menu / lobby menu
