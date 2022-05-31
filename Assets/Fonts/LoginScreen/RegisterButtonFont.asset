@@ -163,11 +163,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 71c1514a6bd24e1e882cebbe1904ce04, type: 3}
-  m_Name: MultiplayerGameBtnFont
+  m_Name: RegisterButtonFont
   m_EditorClassIdentifier: 
-  hashCode: -2047246593
+  hashCode: 1051294764
   material: {fileID: -6924182016524902626}
-  materialHashCode: -1429901825
+  materialHashCode: 225299852
   m_Version: 1.1.0
   m_SourceFontFileGUID: 94cfe1d2d83d37143bcae8e8e683498e
   m_SourceFontFile_EditorRef: {fileID: 12800000, guid: 94cfe1d2d83d37143bcae8e8e683498e, type: 3}
