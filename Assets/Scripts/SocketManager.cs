@@ -21,13 +21,13 @@ public class SocketManager : MonoBehaviour
     string _tempPasswordInput = "";//what was inputed in password textbox
     [SerializeField] private TMP_InputField _usernameInputText, _passwordInputText, _lobbyKeyInput; //user and pass input // lobbyKey input
     [SerializeField] private TMP_Text _errorUserPassText; //incorrect text output to show when u&p are wrong or taken
-    [SerializeField] private Text _errorLobbyKeyText; //incorrect text output when you enter the wrong lobby key
+    [SerializeField] private TMP_Text _errorLobbyKeyText; //incorrect text output when you enter the wrong lobby key
     private string _errorKeyMessage = ""; //lobby key text
     bool _correctUandP, _incorrectUandP, _clientOutofDate = false; //was the password and username correct/taken/wrong? or is the client out of date
 
     private GameScript _gameScript; //game script reference
     private MenuScript _menuScript; //menu script reference
-    [SerializeField] private Text _keyHostText; //Text that displays lobby key when hosting
+    [SerializeField] private TMP_Text _keyHostText; //Text that displays lobby key when hosting
     bool _multiplayerLobbyReady = false; //bool to start multiplayer game when lobby is ready
     bool _multiplayerGameStarted = false; //has the multiplayer game been started.
     private bool _recieveButton = false;//tell client it recieved a button (in update message do something)

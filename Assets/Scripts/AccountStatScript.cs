@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 /*
@@ -9,7 +10,7 @@ by Tyler McMillan
 */
 public class AccountStatScript : MonoBehaviour
 {
-    [SerializeField] private Text _usernameTextbox, _winsTextbox, _winLossRatioTextbox, _matchesTextbox; //reference to textboxes on account screen that hold stats
+    [SerializeField] private TMP_Text _usernameTextbox, _winsTextbox, _winLossRatioTextbox, _matchesTextbox; //reference to textboxes on account screen that hold stats
 
     public void UpdateAccountStats(string m_user, int m_wins, int m_matchesTotal){
         float m_winLossRatio = 0; //float that holds the win loss ratio
