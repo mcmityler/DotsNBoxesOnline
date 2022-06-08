@@ -63,24 +63,36 @@ public class MenuScript : MonoBehaviour
         _socketManager.ExitGameButton();
         Application.Quit();
     }
-    public void LobbyMenuSceenButton()//called by multiplayer button on main menu 
+    public void OpenLobbyMenu()//called by login button // show lobby menu
     {
         //show lobby menu
         _lobbyMenuSceenScreenObj.SetActive(true);
+        _loginScreenObj.SetActive(false);
         _colourScreenObj.SetActive(false);
         _myAccountScreenObj.SetActive(false);
         //set gamestates.
         _socketManager.SetSOCKETGameState("LOBBYMENU");
         _gameScript.SetGSGameState("LOBBYMENU");
     }
+    public void BackToLoginScreen(){ //called from back button on multiplayer menu screen
+        //show login screen
+        _lobbyMenuSceenScreenObj.SetActive(false);
+        _loginScreenObj.SetActive(true);
+        //set gamestates
+        _socketManager.SetSOCKETGameState("LOGINREGISTER");
+        _gameScript.SetGSGameState("LOGINREGISTER");
+    }
     public void MyAccountScreenToggle(){ //toggle my account screen visibility
         _myAccountScreenObj.SetActive(true);
+        _colourScreenObj.SetActive(false);
+        _lobbyMenuSceenScreenObj.SetActive(false);
         _socketManager.SetSOCKETGameState("MYACCOUNT");
         _gameScript.SetGSGameState("MYACCOUNT");
     }
     public void LobbyKeyScreenToggle(){ //toggle lobbyKey screen visibility
         _keyLobbyVisable = !_keyLobbyVisable;
         _keyLobbyObj.SetActive(_keyLobbyVisable);
+        _lobbyMenuSceenScreenObj.SetActive(!_keyLobbyVisable);
     }
     public void PauseMenuToggle(){ //toggle pause menu visibility
         _pauseMenuVisable = !_pauseMenuVisable;
@@ -103,7 +115,8 @@ public class MenuScript : MonoBehaviour
     }
     public void ColourScreen(){ //turn on colour screen when button clicked inside of my account screen
         _colourScreenObj.SetActive(true);
-        _socketManager.SetColourButtonSelected();
+        _myAccountScreenObj.SetActive(false);
+        _socketManager.SelectColourButtonOnOpen();
         _socketManager.SetSOCKETGameState("COLOURSCREEN");
         _gameScript.SetGSGameState("COLOURSCREEN");
     }

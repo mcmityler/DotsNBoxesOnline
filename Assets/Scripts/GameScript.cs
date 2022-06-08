@@ -67,16 +67,19 @@ public class GameScript : MonoBehaviour
     private Color32 _blue = new Color32(0, 16, 255, 255);
     private Color32 _red = new Color32(255, 0, 10, 255);
     private Color32 _green = new Color32(11, 255, 0, 255);
-    private Color32 _yellow = new Color32(255, 246, 0, 255);
+    private Color32 _yellow = new Color32(173, 161, 0, 255);
     private Color32 _purple = new Color32(225, 0, 255, 255);
     private Color32 _orange = new Color32(255, 129, 0, 255);
     private Color32 _lightblue = new Color32(0, 251, 255, 255);
+
     //----------------------------FUNCTIONS-------------------------------------
     void Awake()
     {
         _canvas = GameObject.FindGameObjectWithTag("Canvas"); //give canvas reference to the canvas obj
         _socketManager = this.GetComponent<SocketManager>();//set reference to socket script
         _socketManager.SetSOCKETGameState(_currentGamestate.ToString()); //set gamestate in socketmanager
+        
+       
     }
     void Update()
     {
@@ -265,7 +268,7 @@ public class GameScript : MonoBehaviour
                 rectTransformRow.SetParent(_backgroundObj.transform); //make rButton child of background panel obj
                 rButton.GetComponent<RectTransform>().sizeDelta = new Vector2(82, 20); //set buttons size
                 //set buttons position on background panel obj
-                rectTransformRow.position = new Vector2(_backgroundObj.GetComponent<RectTransform>().rect.width / 2 + (_boardSize / 2 * 80) - i * 80, _backgroundObj.GetComponent<RectTransform>().rect.height / 2 + (_boardSize / 2 * 80) + 35 - b * 80);
+                rectTransformRow.position = new Vector2(Screen.width / 2 + (_boardSize / 2 * 80) - i * 80, Screen.height / 2 + (_boardSize / 2 * 80) + 35 - b * 80);
                 rButton.name = (b.ToString() + i.ToString() + "r"); //set name of rButton
                 _gameBoard.rowButtons.Add(rButton.name, rButton); //add rButton to dictionary with rButton name
                 _gameBoard.rowButtons[rButton.name].onClick.AddListener(() => ButtonClicked(rButton, true)); //add listener to rButton so it knows when its clicked and which is clicked. ************ PASSES TRUE SO IT KNOWS ITS A ROW
@@ -279,7 +282,7 @@ public class GameScript : MonoBehaviour
                 rectTransformCol.SetParent(_backgroundObj.transform);//make cButton child of canvas
                 cButton.GetComponent<RectTransform>().sizeDelta = new Vector2(82, 20); //set buttons size
                 //set buttons position on canvas
-                rectTransformCol.position = new Vector2(_backgroundObj.GetComponent<RectTransform>().rect.width / 2 + (_boardSize / 2 * 80) + 35 - b * 80, _backgroundObj.GetComponent<RectTransform>().rect.height / 2 + (_boardSize / 2 * 80) - i * 80);
+                rectTransformCol.position = new Vector2(Screen.width / 2 + (_boardSize / 2 * 80) + 35 - b * 80, Screen.height / 2 + (_boardSize / 2 * 80) - i * 80);
                 //set rotation of buttons.
                 rectTransformCol.eulerAngles = new Vector3(rectTransformCol.transform.eulerAngles.x, rectTransformCol.transform.eulerAngles.y, 90);
                 cButton.name = (i.ToString() + b.ToString() + "c");//set name of cButton
@@ -299,9 +302,9 @@ public class GameScript : MonoBehaviour
                     var _rectTransform = _box.GetComponent<RectTransform>(); //get reference of buttons rectTransform
                     _rectTransform.SetParent(_backgroundObj.transform);//make button child of canvas
                     _rectTransform.SetAsFirstSibling(); //make sure box is behind buttons
-                    _rectTransform.sizeDelta = new Vector2(75, 75);//set Boxes size
-                    //set buttons position on canvas
-                    _rectTransform.position = new Vector2(_backgroundObj.GetComponent<RectTransform>().rect.width / 2 + (_boardSize / 2 * 80) - i * 80, _backgroundObj.GetComponent<RectTransform>().rect.height / 2 + (_boardSize / 2 * 80) - b * 80); ;
+                   _box.GetComponent<RectTransform>().sizeDelta = new Vector2(75, 75);//set Boxes size
+                    //set box position on canvas
+                    _rectTransform.position = new Vector2(Screen.width / 2 + (_boardSize / 2 * 80) - i * 80, Screen.height / 2 + (_boardSize / 2 * 80) - b * 80); ;
                     //add buttons that are surrounding boxes to list within the box prefab.
                     _box.GetComponent<BoxScript>().boxLines(_gameBoard.rowButtons[b.ToString() + i.ToString() + "r"]);
                     _box.GetComponent<BoxScript>().boxLines(_gameBoard.rowButtons[(b + 1).ToString() + i.ToString() + "r"]);
@@ -559,7 +562,7 @@ public class GameScript : MonoBehaviour
         }
 
     }
-
+    
     public void MPSetColour(string[] m_colourlist, string m_mycolour)// Set Player colours so no one has the same colour
     {
         //reset counters

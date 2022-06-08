@@ -34,7 +34,7 @@ public class SocketManager : MonoBehaviour
     private int _tempIsRowButton = 0;//temp is row bool recieved
     private string _tempButtonName;//save the button name recieved
     private bool _joinedGame, _playerQuitAfterGame, _everyoneReplay = false; //bools to hold, that you joined a game (send to join screen).// player quit game after its been played once(send back to main menu) //everyone clicked restart game for updateloop
-    [SerializeField] private Text playerQuitText; //text to tell puser a player quit and thats why they dced
+    [SerializeField] private TMP_Text playerQuitText; //text to tell puser a player quit and thats why they dced
     private int[] _tempTurnOrder;
     private bool heartbeating, _recievedHeartbeat = false; //has the heartbeat started? // did this client recieve a heartbeat back from the server
     private bool _otherPlayerTimedout = false; //bool for update loop when someone (not you) dcs from lobby
@@ -260,7 +260,7 @@ public class SocketManager : MonoBehaviour
                 colourButton.GetComponent<Image>().sprite = _unselectedColour;
             }
             
-            GameObject.Find(_myColour + "ColourButton").GetComponent<Image>().sprite = _selectedColour;
+            GameObject.Find(_myColour + "ColourButtonTMP").GetComponent<Image>().sprite = _selectedColour; //this means the name of the colour button matters!!
             _gameScript.UsernameTextColour(_usernameText, _myColour);
 
         }
@@ -295,7 +295,7 @@ public class SocketManager : MonoBehaviour
             {
                 _passwordInputText.text = ""; // set password input box to nothing
                 _usernameInputText.text = ""; //set username input box to nothing
-                _menuScript.LobbyMenuSceenButton();
+                _menuScript.OpenLobbyMenu();
                 FindObjectOfType<AudioManager>().Play("successSound");
                 _accountStatScript.UpdateAccountStats(_myUserID, _myWins, _myMatches);
                 _usernameText.text = _myUserID;
@@ -840,13 +840,13 @@ public class SocketManager : MonoBehaviour
         }
     }
     [SerializeField] private Sprite _unselectedColour, _selectedColour;
-    public void SetColourButtonSelected()
+    public void SelectColourButtonOnOpen()
     { 
         foreach (GameObject colourButton in GameObject.FindGameObjectsWithTag("ColourButton")) //reset to unselected, so if you are logging into a different account, it wont have your last colour selected 
         {
                 colourButton.GetComponent<Image>().sprite = _unselectedColour;
         }
-        GameObject.Find(_myColour + "ColourButton").GetComponent<Button>().image.sprite = _selectedColour;
+        GameObject.Find(_myColour + "ColourButtonTMP").GetComponent<Button>().image.sprite = _selectedColour; //naming convention on the actual button matters
 
     }
     public void SendColourMessage(string m_colourName)
@@ -875,6 +875,10 @@ public class SocketManager : MonoBehaviour
     }
     public void ClearFadeTurn(){
         _fadeTextAnimator.SetBool("Fade", false);
+    }
+
+    public string GetMyColour(){
+        return _myColour;
     }
 
 }
