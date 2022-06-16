@@ -63,7 +63,7 @@ public class GameScript : MonoBehaviour
     // -------------------------------------COLOUR VARIABLES----------------------------
     [SerializeField] private TMP_Text _MPFadeTurnTextbox; //text box that fades letting player know its their turn
     List<int> _redctr, _bluectr, _yellowctr, _greenctr, _purplectr, _orangectr, _lightbluectr; //different lists to count if a colour is taken, when setting other players colours in multiplayer
-    private Color32[] _playerColors = new Color32[] { new Color32(0, 16, 255, 255), new Color32(255, 0, 10, 255), new Color32(11, 255, 0, 255), new Color32(255, 246, 0, 255) }; // players colors on the board. (in order first - fourth player)
+    private Color32[] _playerColors = new Color32[] { new Color32(0, 16, 255, 255), new Color32(255, 0, 10, 255), new Color32(11, 255, 0, 255), new Color32(173, 161, 0, 255) }; // players colors on the board. (in order first - fourth player)
     private Color32 _blue = new Color32(0, 16, 255, 255);
     private Color32 _red = new Color32(255, 0, 10, 255);
     private Color32 _green = new Color32(11, 255, 0, 255);
@@ -304,7 +304,7 @@ public class GameScript : MonoBehaviour
                     _rectTransform.SetAsFirstSibling(); //make sure box is behind buttons
                    _box.GetComponent<RectTransform>().sizeDelta = new Vector2(75, 75);//set Boxes size
                     //set box position on canvas
-                    _rectTransform.position = new Vector2(Screen.width / 2 + (_boardSize / 2 * 80) - i * 80, Screen.height / 2 + (_boardSize / 2 * 80) - b * 80); ;
+                    _rectTransform.position = new Vector2(Screen.width / 2 + (_boardSize / 2 * 80) - i * 80 - 4, Screen.height / 2 + (_boardSize / 2 * 80) - b * 80 - 4); ;
                     //add buttons that are surrounding boxes to list within the box prefab.
                     _box.GetComponent<BoxScript>().boxLines(_gameBoard.rowButtons[b.ToString() + i.ToString() + "r"]);
                     _box.GetComponent<BoxScript>().boxLines(_gameBoard.rowButtons[(b + 1).ToString() + i.ToString() + "r"]);
@@ -458,7 +458,7 @@ public class GameScript : MonoBehaviour
                 }
                 if (m_clicked[0] && m_clicked[1] && m_clicked[2] && m_clicked[3]) // if all buttons in temp m_clicked array were pressed do this.
                 {
-                    box.GetComponent<BoxScript>().ButtonSurrounded(_whosTurn[_turnRotation], _playerColors[_whosTurn[_turnRotation] - 1], _blue, _red, _green, _yellow, _purple, _orange, _lightblue); //pass to box script to change its colour and depending on whos turn it is.
+                    box.GetComponent<BoxScript>().ButtonSurrounded( _playerColors[_whosTurn[_turnRotation] - 1], _blue, _red, _green, _yellow, _purple, _orange, _lightblue); //pass to box script to change its colour and depending on whos turn it is.
                     m_pointGained = true; //point is gained
                     _scoreScript.AddScore(_whosTurn[_turnRotation] - 1);//add points to whoevers turns score.
 

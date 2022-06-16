@@ -21,8 +21,9 @@ public class BoxScript : MonoBehaviour
     public void boxLines(Button _button){ //function to add buttons to list of buttons surrounding this box.
         buttonList.Add(_button);
     }
-    public void ButtonSurrounded(int m_whosTurn, Color32 m_turnColor, Color32 m_blue, Color32 m_red, Color32 m_green, Color32 m_yellow, Color32 m_purple, Color32 m_orange, Color32 m_lightblue){
+    public void ButtonSurrounded( Color32 m_turnColor, Color32 m_blue, Color32 m_red, Color32 m_green, Color32 m_yellow, Color32 m_purple, Color32 m_orange, Color32 m_lightblue){
         Color32 m_changeColorTo = new Color32 (0,0,0,0); //hold what colour to turn the box into
+        
         //------------Change colour to dark version --------------
         if(m_turnColor.Equals(m_blue)){ //blue
             m_changeColorTo = _darkblue;
@@ -45,8 +46,12 @@ public class BoxScript : MonoBehaviour
         else if(m_turnColor.Equals(m_lightblue)){ //lightblue
             m_changeColorTo = _darklightblue;
         }
+        Debug.Log(m_changeColorTo);
         //change obj tag
         gameObject.tag = "checked";
+        if(Screen.width >= 1800 || !Application.isEditor){
+         gameObject.GetComponent<Animator>().SetBool("fullScreen", true); //play animation
+        }
         gameObject.GetComponent<Animator>().SetBool("fillBox", true); //play animation
         gameObject.GetComponent<Image>().color = m_changeColorTo; //Change box colour 
         gameObject.GetComponent<AudioSource>().Play(); //play fill sound
