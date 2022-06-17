@@ -73,7 +73,7 @@ public class SocketManager : MonoBehaviour
     private bool _checklistEmpty = true; //is the checklist empty / should you send a heartbeat since its empty
     private bool _startHeartbeat = false; //start heartbeat in update loop when server gets back connect message.
     private bool _accounttaken, _accountmade = false;
-    [SerializeField] private GameObject connectionStatusText, lastPingText;
+    [SerializeField] private TMP_Text connectionStatusText, lastPingText;
     [SerializeField] private Text _errorTimedOutClientSideText;
     private float lastPingCounter = -1;
     private string _myUserID = "null";
@@ -819,24 +819,24 @@ public class SocketManager : MonoBehaviour
     }
     private void UpdateConnectStatus()
     {
-        lastPingText.GetComponent<Text>().text = lastPingCounter.ToString() + " Seconds";
+        lastPingText.GetComponent<TMP_Text>().text = lastPingCounter.ToString("F2") + " Seconds";
         if (lastPingCounter == -1 || lastPingCounter > 8 && lastPingCounter < 12)
         {
             //the heart hasnt connected to the server yet
-            connectionStatusText.GetComponent<Text>().text = "Pending...";
-            connectionStatusText.GetComponent<Text>().color = Color.yellow;
+            connectionStatusText.GetComponent<TMP_Text>().text = "Pending...";
+            connectionStatusText.GetComponent<TMP_Text>().color = Color.yellow;
         }
         if (lastPingCounter < 8 && lastPingCounter > 0)
         {
             //the heart is connected and alive
-            connectionStatusText.GetComponent<Text>().text = "Connected!";
-            connectionStatusText.GetComponent<Text>().color = Color.green;
+            connectionStatusText.GetComponent<TMP_Text>().text = "Connected!";
+            connectionStatusText.GetComponent<TMP_Text>().color = Color.green;
         }
         if (lastPingCounter >= 12)
         {
             //the heart message isnt coming back from the server for long enough
-            connectionStatusText.GetComponent<Text>().text = "Disconnected!";
-            connectionStatusText.GetComponent<Text>().color = Color.red;
+            connectionStatusText.GetComponent<TMP_Text>().text = "Disconnected!";
+            connectionStatusText.GetComponent<TMP_Text>().color = Color.red;
         }
     }
     [SerializeField] private Sprite _unselectedColour, _selectedColour;

@@ -17,6 +17,8 @@ public class NeonButtonScript : MonoBehaviour, IPointerEnterHandler, IPointerExi
 
     private Color32 _blurSQRColor;
 
+    public bool isPauseMenu = false;
+
     void Start(){
         _TitleText = GameObject.FindGameObjectWithTag("MainTitle");
         InitColour();

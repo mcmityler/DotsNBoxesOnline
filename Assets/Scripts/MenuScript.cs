@@ -7,7 +7,7 @@ public class MenuScript : MonoBehaviour
 {
     private GameScript _gameScript; //reference to gamescript
     private SocketManager _socketManager;
-    [SerializeField] private GameObject _mainMenuObj, _helpScreenObj, _creditScreenObj, _loginScreenObj, _lobbyMenuSceenScreenObj, _myAccountScreenObj, _keyLobbyObj, _pauseMenuObj, _connectionObj, _colourScreenObj; //reference to screen objects to in/visable
+    [SerializeField] private GameObject _mainMenuObj, _helpScreenObj, _creditScreenObj, _loginScreenObj, _lobbyMenuSceenScreenObj, _myAccountScreenObj, _keyLobbyObj, _pauseMenuObj, _connectionObj, _colourScreenObj, _localSettingsObj; //reference to screen objects to in/visable
     private bool _myAccountScreenVisable,_keyLobbyVisable, _pauseMenuVisable = false; //bool to control screen visability toggle (so i can use the same func for back button and my account button)
 
     void Awake(){
@@ -15,9 +15,15 @@ public class MenuScript : MonoBehaviour
         _socketManager = this.GetComponent<SocketManager>();///set reference to socketmanager
     }
     void Update(){
-        if (Input.GetKeyDown(KeyCode.Escape))
+        Debug.Log("pressed");
+        if (Input.GetButtonDown("Escape") || Input.GetButtonDown("P")) 
         {
+            
             PauseMenuToggle();
+            foreach (GameObject m_neonButtonsActive in GameObject.FindGameObjectsWithTag("Neon"))
+            {
+                m_neonButtonsActive.GetComponent<NeonButtonScript>().OnButtonClick();
+            }
         }
     }
     public void LocalGameButton()//called by local game button on main menu
@@ -46,15 +52,25 @@ public class MenuScript : MonoBehaviour
     }
     public void BacktoMainButton()//called by back buttons on every screen ==> goes to main menu.
     {
-        
-        _creditScreenObj.SetActive(false);
-        _helpScreenObj.SetActive(false);
-        _loginScreenObj.SetActive(false);
-        _lobbyMenuSceenScreenObj.SetActive(false);
-        _connectionObj.SetActive(false);
-
+        //hide all screens that need to be hidden
         _mainMenuObj.SetActive(true);
-        _socketManager.SetSOCKETGameState("STARTMENU");
+        _helpScreenObj.SetActive(false);
+        _creditScreenObj.SetActive(false);
+        _loginScreenObj.SetActive(false);
+        _lobbyMenuSceenScreenObj.SetActive(false); 
+        _myAccountScreenObj.SetActive(false);
+        _keyLobbyObj.SetActive(false);
+        _pauseMenuObj.SetActive(false);
+        _connectionObj.SetActive(false); 
+        _colourScreenObj.SetActive(false);
+
+        //show screens that need to be shown
+        _localSettingsObj.SetActive(true);
+
+        _gameScript.RestartButton(true); //destroy gameboard and reset names
+        _mainMenuObj.SetActive(true); //set main menu active
+        //change gamestates.
+        _socketManager.SetSOCKETGameState("STARTMENU"); 
         _gameScript.SetGSGameState("STARTMENU");
         _socketManager.OnDestroy(); //destroy UDP if it is running and you go back to main menu
     }
