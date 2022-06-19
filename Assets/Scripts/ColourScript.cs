@@ -9,11 +9,11 @@ public class ColourScript : MonoBehaviour, IPointerEnterHandler, IPointerExitHan
     //colour references because they have different alpha levels
     private Color32 _blue = new Color32(0, 16, 255, 60);
     private Color32 _red = new Color32(255, 0, 10, 30);
-    private Color32 _green = new Color32(11, 255, 0, 30);
+    private Color32 _green = new Color32(37,181,27, 30);
     private Color32 _yellow = new Color32(255, 246, 0, 30);
     private Color32 _purple = new Color32(225, 0, 255, 30);
     private Color32 _orange = new Color32(255, 129, 0, 30);
-    private Color32 _lightblue = new Color32(0, 251, 255, 30);
+    private Color32 _lightblue = new Color32(63,163,163, 30);
     private Color32 _black = new Color32(0, 0, 0, 90);
     [SerializeField] private Image _buttonBlurBG; //background of button(blur)
     [SerializeField] private string _thisButtonsColour; //string set on button to tell it what colour it is

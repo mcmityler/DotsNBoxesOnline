@@ -66,11 +66,11 @@ public class GameScript : MonoBehaviour
     private Color32[] _playerColors = new Color32[] { new Color32(0, 16, 255, 255), new Color32(255, 0, 10, 255), new Color32(11, 255, 0, 255), new Color32(173, 161, 0, 255) }; // players colors on the board. (in order first - fourth player)
     private Color32 _blue = new Color32(0, 16, 255, 255);
     private Color32 _red = new Color32(255, 0, 10, 255);
-    private Color32 _green = new Color32(11, 255, 0, 255);
+    private Color32 _green = new Color32(37,181,27, 255);
     private Color32 _yellow = new Color32(173, 161, 0, 255);
     private Color32 _purple = new Color32(225, 0, 255, 255);
     private Color32 _orange = new Color32(255, 129, 0, 255);
-    private Color32 _lightblue = new Color32(0, 251, 255, 255);
+    private Color32 _lightblue = new Color32(63, 163, 163, 255);
 
     //----------------------------FUNCTIONS-------------------------------------
     void Awake()
