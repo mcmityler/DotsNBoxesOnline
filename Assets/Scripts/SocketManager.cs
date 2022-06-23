@@ -13,7 +13,7 @@ by Tyler McMillan
 */
 public class SocketManager : MonoBehaviour
 {
-    const float VERSION = 0.25f; //what version you are playing on (sends to server to check that you are on the right version)
+    const float VERSION = 0.32f; //what version you are playing on (sends to server to check that you are on the right version)
     public UdpClient udp; //new udp (send/recieve messages from aws) 
     public const string IP_ADRESS = "54.205.115.9"; //the ip the server is connected to..
     public const int PORT = 12345; //port we are using
