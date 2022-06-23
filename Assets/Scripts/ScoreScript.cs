@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 /*
@@ -13,11 +14,11 @@ public class ScoreScript : MonoBehaviour
 
     int _winnerNumber = -1;
     private int[] _playerScores = new int[] { 0, 0, 0, 0 }; //player 1-4 scores (how many boxes have they collected)
-    [SerializeField] private Text _winnerText; //text that displays who won the game or if it was a tie
+    [SerializeField] private TMP_Text _winnerText; //text that displays who won the game or if it was a tie
     [SerializeField] private Animator _endgameScoreAnimator; //animator on engame score screen (changes size of scorebox depending on how many players)
-    [SerializeField] private Text[] _playerScoreTextboxes; //player 1 - 4 score text boxes
-    [SerializeField] private Text[] _playerNameTextboxes; //player 1-4 name text boxes in score (during game score screen.)
-    [SerializeField] private Text[] _endgameScoreTextboxes; //endgame 1 - 4 place score text boxes
+    [SerializeField] private TMP_Text[] _playerScoreTextboxes; //player 1 - 4 score text boxes
+    [SerializeField] private TMP_Text[] _playerNameTextboxes; //player 1-4 name text boxes in score (during game score screen.)
+    [SerializeField] private TMP_Text[] _endgameScoreTextboxes; //endgame 1 - 4 place score text boxes
 
     [SerializeField] private GameObject _gameoverScoreboardObj; //gameover obj displays score screen and restart button
     [SerializeField] private GameObject _LCRestart, _MPRestart; //gameobjects that hold restart buttons for multiplayer or localplay
@@ -75,6 +76,7 @@ public class ScoreScript : MonoBehaviour
     }
     public void CalculateWinner(int m_numberOfPlayers, int m_myMPNum, string[] m_playerNames) //calculate Score screen scores. && update endgame scoreboard textboxes
     {
+        Color32[] m_colourList = GameObject.FindGameObjectWithTag("GameManager").GetComponent<GameScript>().GetPlayerColours();
         _didYouWinMP = 0; //reset if you won so you get acurate reading
         int[] m_playerPlace = new int[] { 0, 0, 0, 0 }; //check what place each player finished in.
         for (int i = 0; i < m_numberOfPlayers; i++)
@@ -136,14 +138,16 @@ public class ScoreScript : MonoBehaviour
         //check that you have a player in first (if 4 player)
         if (m_firstPlace != -1)
         {
-            _endgameScoreTextboxes[m_ctr].text = m_playerNames[m_firstPlace] + "      Boxes: " + _playerScores[m_firstPlace];
+            _endgameScoreTextboxes[m_ctr].text = "  " +m_playerNames[m_firstPlace] + "      Boxes: " + _playerScores[m_firstPlace];
+            _endgameScoreTextboxes[m_ctr].color = m_colourList[m_firstPlace];
             _winnerText.text = m_playerNames[m_firstPlace] + " is the Winner!";
             _winnerNumber = m_firstPlace;
             m_ctr++;
         }
         foreach (int second in m_secondPlace) //cycle through any players that tied for second
         {
-            _endgameScoreTextboxes[m_ctr].text = m_playerNames[second] + "      Boxes: " + _playerScores[second];
+            _endgameScoreTextboxes[m_ctr].text = "  " +m_playerNames[second] + "      Boxes: " + _playerScores[second];
+            _endgameScoreTextboxes[m_ctr].color = m_colourList[second];
             if (m_firstPlace == -1 && m_secondPlace.Count == 1)
             {
                 _winnerText.text = m_playerNames[second] + " is the Winner!";
@@ -153,7 +157,8 @@ public class ScoreScript : MonoBehaviour
         }
         foreach (int third in m_thirdPlace)//cycle through any players that tied for third
         {
-            _endgameScoreTextboxes[m_ctr].text = m_playerNames[third] + "      Boxes: " + _playerScores[third];
+            _endgameScoreTextboxes[m_ctr].text = "  " +m_playerNames[third] + "      Boxes: " + _playerScores[third];
+            _endgameScoreTextboxes[m_ctr].color = m_colourList[third];
             if (m_secondPlace.Count == 0 && m_thirdPlace.Count == 1)
             {
                 _winnerText.text = m_playerNames[third] + " is the Winner!";
@@ -163,7 +168,8 @@ public class ScoreScript : MonoBehaviour
         }
         foreach (int fourth in m_fourthPlace)//cycle through any players that tied for fourth
         {
-            _endgameScoreTextboxes[m_ctr].text = m_playerNames[fourth] + "      Boxes: " + _playerScores[fourth];
+            _endgameScoreTextboxes[m_ctr].text = "  " +m_playerNames[fourth] + "      Boxes: " + _playerScores[fourth];
+            _endgameScoreTextboxes[m_ctr].color = m_colourList[fourth];
             m_ctr++;
         }
 

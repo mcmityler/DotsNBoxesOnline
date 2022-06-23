@@ -35,7 +35,7 @@ public class GameScript : MonoBehaviour
     private int _myPlayerNumberMP = 0; //turn number / what player you are in the lobby
     private int[] _whosTurn = new int[] { 0, 0, 0, 0 }; //holds randomized turn order
     private int _turnRotation = 0; //placeholder for what turn you are currently on
-    [SerializeField] private Text[] _playerTurnOrderText; //text boxes that display whos turn it is in the turn order 
+    [SerializeField] private TMP_Text[] _playerTurnOrderText; //text boxes that display whos turn it is in the turn order 
     private GameBoard _gameBoard = new GameBoard(); //gameboard is every button, box and if the buttons have been clicked yet.
     [SerializeField] private ScoreScript _scoreScript; //reference to score script
     private enum GAMESTATE
@@ -63,7 +63,7 @@ public class GameScript : MonoBehaviour
     // -------------------------------------COLOUR VARIABLES----------------------------
     [SerializeField] private TMP_Text _MPFadeTurnTextbox; //text box that fades letting player know its their turn
     List<int> _redctr, _bluectr, _yellowctr, _greenctr, _purplectr, _orangectr, _lightbluectr; //different lists to count if a colour is taken, when setting other players colours in multiplayer
-    private Color32[] _playerColors = new Color32[] { new Color32(0, 16, 255, 255), new Color32(255, 0, 10, 255), new Color32(11, 255, 0, 255), new Color32(173, 161, 0, 255) }; // players colors on the board. (in order first - fourth player)
+    private Color32[] _playerColors = new Color32[] { new Color32(0, 16, 255, 255), new Color32(255, 0, 10, 255), new Color32(37,181,27, 255), new Color32(173, 161, 0, 255) }; // players colors on the board. (in order first - fourth player)
     private Color32 _blue = new Color32(0, 16, 255, 255);
     private Color32 _red = new Color32(255, 0, 10, 255);
     private Color32 _green = new Color32(37,181,27, 255);
@@ -232,8 +232,13 @@ public class GameScript : MonoBehaviour
 
                     _playerNames[i] = _localPlayerNameInput[i].text; //display name in text box
                     _scoreScript.UpdateUserNames(i, _playerNames[i]);//display names in current score screen.
+                    Debug.Log(_playerNames[i] + " < name + " + i + " < player number");
                 }
-                ArrangeTurnOrder(i); //Arrange text and color of text boxes in bottom left
+               
+            }
+            for (int i = 0; i < _numberOfPlayers; i++) //sepereate for loop because before it wouldnt always arrange correctly.
+            {
+                 ArrangeTurnOrder(i); //Arrange text and color of text boxes in bottom left
             }
         }
 
@@ -242,6 +247,7 @@ public class GameScript : MonoBehaviour
     {
         _playerTurnOrderText[m_turnOrder].text = _playerNames[(_whosTurn[m_turnOrder]) - 1]; //Change text to correct name
         _playerTurnOrderText[m_turnOrder].color = _playerColors[(_whosTurn[m_turnOrder]) - 1]; //Change color of text box to players color
+        Debug.Log("random turn oder" + (((_whosTurn[m_turnOrder]) - 1)));
     }
     public void UpdateMPUsernames(string[] m_userList)
     {
@@ -531,6 +537,9 @@ public class GameScript : MonoBehaviour
             }
         }
 
+    }
+    public Color32[] GetPlayerColours(){
+        return _playerColors;
     }
     public int GetMyPlayerNumber() //Getter for player number in multiplayer.
     {
