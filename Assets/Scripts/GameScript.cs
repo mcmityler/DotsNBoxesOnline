@@ -554,6 +554,10 @@ public class GameScript : MonoBehaviour
     {
         return _numberOfPlayers;
     }
+    public void SetLobbySize(int m_lobbySize) //getter lobby size.
+    {
+         _numberOfPlayers = m_lobbySize;
+    }
     public void MPSetLobbySize(int[] m_turnOrder) //setter lobby size 
     {
         _numberOfPlayers = m_turnOrder.Length;

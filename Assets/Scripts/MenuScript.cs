@@ -105,10 +105,13 @@ public class MenuScript : MonoBehaviour
         _socketManager.SetSOCKETGameState("MYACCOUNT");
         _gameScript.SetGSGameState("MYACCOUNT");
     }
-    public void LobbyKeyScreenToggle(){ //toggle lobbyKey screen visibility
-        _keyLobbyVisable = !_keyLobbyVisable;
-        _keyLobbyObj.SetActive(_keyLobbyVisable);
-        _lobbyMenuSceenScreenObj.SetActive(!_keyLobbyVisable);
+    public void LobbyKeyScreenVisable(){ //toggle lobbyKey screen visibility
+        _keyLobbyObj.SetActive(true);
+        _lobbyMenuSceenScreenObj.SetActive(false);
+    }
+     public void LobbyKeyScreenInvisable(){ //toggle lobbyKey screen visibility
+        _keyLobbyObj.SetActive(false);
+        _lobbyMenuSceenScreenObj.SetActive(true);
     }
     public void PauseMenuToggle(){ //toggle pause menu visibility
         _pauseMenuVisable = !_pauseMenuVisable;
@@ -118,6 +121,7 @@ public class MenuScript : MonoBehaviour
         _mainMenuObj.SetActive(false);
         _lobbyMenuSceenScreenObj.SetActive(false);
         _loginScreenObj.SetActive(false);
+        _keyLobbyObj.SetActive(false);
     }
     public void StopMPGame(){ //turn back on the multiplayer screens so you can see UI
         _mainMenuObj.SetActive(true);

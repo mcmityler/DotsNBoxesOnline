@@ -16,7 +16,7 @@ public class ScoreScript : MonoBehaviour
     private int[] _playerScores = new int[] { 0, 0, 0, 0 }; //player 1-4 scores (how many boxes have they collected)
     [SerializeField] private TMP_Text _winnerText; //text that displays who won the game or if it was a tie
     [SerializeField] private Animator _endgameScoreAnimator; //animator on engame score screen (changes size of scorebox depending on how many players)
-    [SerializeField] private TMP_Text[] _playerScoreTextboxes; //player 1 - 4 score text boxes
+    [SerializeField] private TMP_Text[] _playerInScoreTextboxes; //player 1 - 4 score text boxes
     [SerializeField] private TMP_Text[] _playerNameTextboxes; //player 1-4 name text boxes in score (during game score screen.)
     [SerializeField] private TMP_Text[] _endgameScoreTextboxes; //endgame 1 - 4 place score text boxes
 
@@ -25,14 +25,19 @@ public class ScoreScript : MonoBehaviour
 
     public void UpdateGameScore(int m_numberOfPlayers) //update scoreboard (ingame)
     {
+         
         for (int i = 0; i < m_numberOfPlayers; i++)
         {
-            _playerScoreTextboxes[i].text = _playerScores[i].ToString(); //display score while game is running
+            
+            _playerInScoreTextboxes[i].text = _playerScores[i].ToString(); //display score while game is running
+            
         }
     }
     public void UpdateUserNames(int m_playerCtr, string m_playerName) //Update player names in scoreboard (ingame)
     {
+        Color32[] m_colourList = GameObject.FindGameObjectWithTag("GameManager").GetComponent<GameScript>().GetPlayerColours();
         _playerNameTextboxes[m_playerCtr].text = m_playerName + ": ";
+        _playerNameTextboxes[m_playerCtr].color = m_colourList[m_playerCtr];
     }
     public void AddScore(int m_playerCtr) //add to players score
     {
@@ -41,7 +46,7 @@ public class ScoreScript : MonoBehaviour
     public void RestartScore(int m_playerCtr) //restart ingame scoreboard obj and other scoreboard variables (INSIDE FOR LOOP)
     {
         _playerScores[m_playerCtr] = 0; //set scores to 0
-        _playerScoreTextboxes[m_playerCtr].text = _playerScores[m_playerCtr].ToString(); //display scores in text box
+        _playerInScoreTextboxes[m_playerCtr].text = _playerScores[m_playerCtr].ToString(); //display scores in text box
         if (m_playerCtr == 0)//do only once;
         { 
             _gameoverScoreboardObj.SetActive(false); //make gameover panel invisible.

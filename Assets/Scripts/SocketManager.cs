@@ -29,6 +29,7 @@ public class SocketManager : MonoBehaviour
     private MenuScript _menuScript; //menu script reference
     [SerializeField] private TMP_Text _keyHostText; //Text that displays lobby key when hosting
     bool _multiplayerLobbyReady = false; //bool to start multiplayer game when lobby is ready
+    bool _updateuserwaitinglist = false; //bool to update waiting list of players 
     bool _multiplayerGameStarted = false; //has the multiplayer game been started.
     private bool _recieveButton = false;//tell client it recieved a button (in update message do something)
     private int _tempIsRowButton = 0;//temp is row bool recieved
@@ -85,6 +86,8 @@ public class SocketManager : MonoBehaviour
 
     private GAMESTATE _tempGameState = GAMESTATE.GAMEOVER;
 
+    [SerializeField] private TMP_Text _waitingClientTMP;
+
 
     void Awake()
     {
@@ -135,8 +138,17 @@ public class SocketManager : MonoBehaviour
         if (_joinedGame)
         {
             _joinedGame = false;
-            _menuScript.LobbyKeyScreenToggle();
+            _menuScript.LobbyKeyScreenVisable();
             SendServerPayload("STARTGAME", true); //check if the lobby is full everytime after a player joins
+        }
+        if(_updateuserwaitinglist){
+            string m_usertemplist = "";
+            foreach (string m_username in _userList)
+            {
+                m_usertemplist += "\n "  + m_username;
+            }
+            _waitingClientTMP.text = "Players:   " + _userList.Length.ToString() + "/"+ _gameScript.GetLobbySize().ToString()  + m_usertemplist;
+            _updateuserwaitinglist = false;
         }
         if (_multiplayerLobbyReady)
         { //Enough players in lobby, get it ready to play.
@@ -145,15 +157,10 @@ public class SocketManager : MonoBehaviour
             _gameScript.MPSetColour(_colourList, _myColour);
             _gameScript.UpdateMPUsernames(_userList);
             _gameScript.MPSetTurnOrder(_randomTurnOrder); //set random turn order
-
+            
             _menuScript.StartMPGame(); //hide menus so you can see game board
             _gameScript.StartMultiplayerGameBoard(); //display game board and hide board settings
             _multiplayerGameStarted = true; //game has started
-            if (_currentGamestate == GAMESTATE.HOSTSCREEN || _currentGamestate == GAMESTATE.JOINSCREEN)
-            {
-                _menuScript.LobbyKeyScreenToggle();
-                Debug.Log("toggle screen");
-            }
             _currentGamestate = GAMESTATE.PLAYINGMULTIPLAYER;
             _gameScript.SetGSGameState(_currentGamestate.ToString());
 
@@ -451,6 +458,13 @@ public class SocketManager : MonoBehaviour
                     _multiplayerLobbyReady = true;
 
 
+                }
+                 if (startGamePayload.startGame == 7) //fill waiting screen user list / player count number.
+                { 
+                    _userList = startGamePayload.UserList;
+                    Debug.Log("Update user waiting list!");
+                    _gameScript.SetLobbySize(startGamePayload.PlayerCount);
+                    _updateuserwaitinglist = true;
                 }
                 //gmScript.FillClientDetails(newClientPayload.players[0].id, newClientPayload.players[0].lobbyID);//tell client what its own ID is and what lobby it is in
                 break;
@@ -760,7 +774,7 @@ public class SocketManager : MonoBehaviour
     }
     public void BackToLobbyMenu()
     { //called by the back button in the host key lobby.
-        _menuScript.LobbyKeyScreenToggle(); //toggle visibility of the lobbykeyscreen.
+        _menuScript.LobbyKeyScreenInvisable(); //toggle visibility of the lobbykeyscreen.
         _currentGamestate = GAMESTATE.LOBBYMENU; //change gamestate back to lobbymenu
         _gameScript.SetGSGameState(_currentGamestate.ToString()); //update gamescript gamestate
         _lobbyString = "null"; //make your lobby Key back to null or nonexistent
@@ -789,11 +803,12 @@ public class SocketManager : MonoBehaviour
         _gameScript.SetSizeofBoard(-1); //tell client board size from slider, so that when you host it sends the server the right size
         _checklist.Add("HOSTDNBGAME");
         //SendServerPayload("HOSTDNBGAME", false); //send message to server telling you are hosting a game and to send back a unique lobby key
-        _menuScript.LobbyKeyScreenToggle();
+        _menuScript.LobbyKeyScreenVisable();
         _currentGamestate = GAMESTATE.HOSTSCREEN;
         _gameScript.SetGSGameState(_currentGamestate.ToString());
         _gameScript.SetMyPlayerNumber(1); //set player number inlobby (since you are hosing you are first)
         playerQuitText.gameObject.SetActive(false); //hide player quit text
+        _waitingClientTMP.text = "Players:   1/"  + _gameScript.GetLobbySize().ToString() + "\n " + _myUserID;
     }
 
     public void JoinGameButton()
@@ -938,6 +953,7 @@ class StartGameServerMessage : BaseSocketMessage
     public int[] RandomOrder;
     public string[] UserList;
     public string[] ColourList;
+    public int PlayerCount;
 
 }
 [System.Serializable]
