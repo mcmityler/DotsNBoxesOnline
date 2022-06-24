@@ -10,6 +10,9 @@ scopes = {
 	"last_search.8040E7BB" = "button"
 	"OpenInspectorPreview.8040E7BB" = "0"
 	"currentGroup.8040E7BB" = "settings"
+	"last_search.8788AF05" = "t:Text"
+	"OpenInspectorPreview.8788AF05" = "0"
+	"currentGroup.8788AF05" = "scene"
 }
 providers = {
 	adb = {
@@ -54,6 +57,8 @@ providers = {
 	}
 }
 recentSearches = [
+	"t:text"
+	"t:textmeshpro"
 	"b"
 ]
 searchItemFavorites = [

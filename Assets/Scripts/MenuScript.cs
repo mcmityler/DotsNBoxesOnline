@@ -13,17 +13,13 @@ public class MenuScript : MonoBehaviour
     void Awake(){
         _gameScript = this.GetComponent<GameScript>();///set reference to gamescript
         _socketManager = this.GetComponent<SocketManager>();///set reference to socketmanager
+        
     }
     void Update(){
-        Debug.Log("pressed");
-        if (Input.GetButtonDown("Escape") || Input.GetButtonDown("P")) 
+        if (Input.GetButtonDown("Escape")) 
         {
-            
+            _pauseMenuObj.GetComponent<RectTransform>().SetAsLastSibling(); //so that i can have the pause menu behind background when starting so you dont see beginning animation.
             PauseMenuToggle();
-            foreach (GameObject m_neonButtonsActive in GameObject.FindGameObjectsWithTag("Neon"))
-            {
-                m_neonButtonsActive.GetComponent<NeonButtonScript>().OnButtonClick();
-            }
         }
     }
     public void LocalGameButton()//called by local game button on main menu
@@ -94,6 +90,7 @@ public class MenuScript : MonoBehaviour
         //show login screen
         _lobbyMenuSceenScreenObj.SetActive(false);
         _loginScreenObj.SetActive(true);
+        _socketManager.SetUserNull();
         //set gamestates
         _socketManager.SetSOCKETGameState("LOGINREGISTER");
         _gameScript.SetGSGameState("LOGINREGISTER");
@@ -114,8 +111,10 @@ public class MenuScript : MonoBehaviour
         _lobbyMenuSceenScreenObj.SetActive(true);
     }
     public void PauseMenuToggle(){ //toggle pause menu visibility
+        
         _pauseMenuVisable = !_pauseMenuVisable;
-        _pauseMenuObj.SetActive(_pauseMenuVisable);
+        
+        _pauseMenuObj.GetComponent<Animator>().SetBool("Paused", _pauseMenuVisable); //animator instead of setting active so that i can hopefully change colours while its not there.
     }
     public void StartMPGame(){ //turn off multiplayer screens so you can see the gameboard
         _mainMenuObj.SetActive(false);

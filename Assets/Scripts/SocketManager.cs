@@ -75,10 +75,10 @@ public class SocketManager : MonoBehaviour
     private bool _startHeartbeat = false; //start heartbeat in update loop when server gets back connect message.
     private bool _accounttaken, _accountmade = false;
     [SerializeField] private TMP_Text connectionStatusText, lastPingText;
-    [SerializeField] private Text _errorTimedOutClientSideText;
+    [SerializeField] private TMP_Text _errorTimedOutClientSideText;
     private float lastPingCounter = -1;
     private string _myUserID = "null";
-    [SerializeField] private Text _usernameText;
+    [SerializeField] private TMP_Text _usernameText;
     [SerializeField] private GameObject _accountDetailsObj;
 
     [SerializeField] private string _myColour;
@@ -115,7 +115,7 @@ public class SocketManager : MonoBehaviour
     // -----------------------------------------------------------------------------------------------------------------------------
     public void Update()
     {
-        Debug.Log("My matches: " + _myMatches + " My Wins: " + _myWins);
+        //Debug.Log("My matches: " + _myMatches + " My Wins: " + _myWins);
         /*if(Input.GetKeyDown(KeyCode.W)){
             FadeTurn();
         }
@@ -138,6 +138,8 @@ public class SocketManager : MonoBehaviour
         if (_joinedGame)
         {
             _joinedGame = false;
+            _errorKeyMessage = "";
+            _errorLobbyKeyText.text = "";
             _menuScript.LobbyKeyScreenVisable();
             SendServerPayload("STARTGAME", true); //check if the lobby is full everytime after a player joins
         }
@@ -884,7 +886,6 @@ public class SocketManager : MonoBehaviour
     
     public void FadeTurn(){
         _MPFadeTurnTextbox.GetComponent<TMP_Text>().text = _myUserID + "'s turn.";
-        _MPFadeTurnTextbox.SetActive(true);
         _fadeTextAnimator.SetBool("Fade", true); 
 
     }
@@ -894,6 +895,9 @@ public class SocketManager : MonoBehaviour
 
     public string GetMyColour(){
         return _myColour;
+    }
+    public void SetUserNull(){
+        _myUserID = "null";
     }
 
 }

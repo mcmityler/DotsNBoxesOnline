@@ -61,7 +61,6 @@ public class GameScript : MonoBehaviour
 
 
     // -------------------------------------COLOUR VARIABLES----------------------------
-    [SerializeField] private TMP_Text _MPFadeTurnTextbox; //text box that fades letting player know its their turn
     List<int> _redctr, _bluectr, _yellowctr, _greenctr, _purplectr, _orangectr, _lightbluectr; //different lists to count if a colour is taken, when setting other players colours in multiplayer
     private Color32[] _playerColors = new Color32[] { new Color32(0, 16, 255, 255), new Color32(255, 0, 10, 255), new Color32(37,181,27, 255), new Color32(173, 161, 0, 255) }; // players colors on the board. (in order first - fourth player)
     private Color32 _blue = new Color32(0, 16, 255, 255);
@@ -481,9 +480,9 @@ public class GameScript : MonoBehaviour
                 _turnRotation = 0;
             }
             Debug.Log(_turnRotation + " turn im on ! -- " + _myPlayerNumberMP + "my player number");
-            if (_turnRotation == (_myPlayerNumberMP - 1))
+            if (_whosTurn[_turnRotation]  == (_myPlayerNumberMP))
             {
-
+                Debug.Log("turn rotation: " + _turnRotation + " My player num: "+( _myPlayerNumberMP - 1));
                 _socketManager.FadeTurn();
             }
             else
@@ -598,36 +597,29 @@ public class GameScript : MonoBehaviour
                 case "red":
                     _redctr.Add(m_playerctr);
                     _playerColors[m_playerctr] = _red;
-                    _MPFadeTurnTextbox.color = _red;
                     break;
                 case "blue":
                     _bluectr.Add(m_playerctr);
                     _playerColors[m_playerctr] = _blue;
-                    _MPFadeTurnTextbox.color = _blue;
                     break;
                 case "yellow":
                     _yellowctr.Add(m_playerctr);
                     _playerColors[m_playerctr] = _yellow;
-                    _MPFadeTurnTextbox.color = _yellow;
                     break;
                 case "green":
                     _playerColors[m_playerctr] = _green;
-                    _MPFadeTurnTextbox.color = _green;
                     _greenctr.Add(m_playerctr);
                     break;
                 case "purple":
                     _playerColors[m_playerctr] = _purple;
-                    _MPFadeTurnTextbox.color = _purple;
                     _purplectr.Add(m_playerctr);
                     break;
                 case "orange":
                     _playerColors[m_playerctr] = _orange;
-                    _MPFadeTurnTextbox.color = _orange;
                     _orangectr.Add(m_playerctr);
                     break;
                 case "lightblue":
                     _playerColors[m_playerctr] = _lightblue;
-                    _MPFadeTurnTextbox.color = _lightblue;
                     _lightbluectr.Add(m_playerctr);
                     break;
             }
@@ -727,7 +719,7 @@ public class GameScript : MonoBehaviour
 
 
     }
-    public void UsernameTextColour(Text m_usernameText, string m_mycolour) //update username text colour 
+    public void UsernameTextColour(TMP_Text m_usernameText, string m_mycolour) //update username text colour 
     {
         switch (m_mycolour)
         {
