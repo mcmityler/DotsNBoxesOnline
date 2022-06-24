@@ -113,4 +113,7 @@ public class AudioManager : MonoBehaviour
             s.source.Pause();
         }
     }
+    public bool IsSoundMuted(){
+        return _soundMuted;
+    }
 }

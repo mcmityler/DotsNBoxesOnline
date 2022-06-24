@@ -16,7 +16,7 @@ public class MenuScript : MonoBehaviour
         
     }
     void Update(){
-        if (Input.GetButtonDown("Escape")) 
+        if (Input.GetKeyDown(KeyCode.Escape)) 
         {
             _pauseMenuObj.GetComponent<RectTransform>().SetAsLastSibling(); //so that i can have the pause menu behind background when starting so you dont see beginning animation.
             PauseMenuToggle();
@@ -56,7 +56,7 @@ public class MenuScript : MonoBehaviour
         _lobbyMenuSceenScreenObj.SetActive(false); 
         _myAccountScreenObj.SetActive(false);
         _keyLobbyObj.SetActive(false);
-        _pauseMenuObj.SetActive(false);
+        PauseMenuToggle();
         _connectionObj.SetActive(false); 
         _colourScreenObj.SetActive(false);
 

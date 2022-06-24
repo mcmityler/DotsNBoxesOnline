@@ -12,6 +12,7 @@ TagManager:
   - MainTitle
   - Neon
   - GameManager
+  - AudioManager
   layers:
   - Default
   - TransparentFX

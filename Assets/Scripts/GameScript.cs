@@ -375,7 +375,10 @@ public class GameScript : MonoBehaviour
             }
             if (!m_alreadyClicked)//if button hasnt been clicked then change the buttons colour and check if the box needs to be filled in.
             {
-                m_b.GetComponentInParent<AudioSource>().Play();
+                  if(GameObject.FindGameObjectWithTag("AudioManager").GetComponent<AudioManager>().IsSoundMuted() == false){ //should you play the sound? is the game muted?
+            
+                 m_b.GetComponentInParent<AudioSource>().Play();
+                  }
                 m_b.GetComponentInParent<Animator>().SetBool("Pressed", true);
                 m_b.gameObject.SetActive(false);
 

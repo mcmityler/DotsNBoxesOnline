@@ -54,7 +54,10 @@ public class BoxScript : MonoBehaviour
         }
         gameObject.GetComponent<Animator>().SetBool("fillBox", true); //play animation
         gameObject.GetComponent<Image>().color = m_changeColorTo; //Change box colour 
-        gameObject.GetComponent<AudioSource>().Play(); //play fill sound
+        if(GameObject.FindGameObjectWithTag("AudioManager").GetComponent<AudioManager>().IsSoundMuted() == false){//should you play the sound? is the game muted?
+            
+            gameObject.GetComponent<AudioSource>().Play(); //play fill sound
+        }
         
     }
 }
