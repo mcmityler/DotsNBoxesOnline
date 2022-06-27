@@ -180,16 +180,13 @@ public class GameScript : MonoBehaviour
             _numberOfPlayerText.text = _numberOfPlayers.ToString(); //display how many are allowed in local lobby
             _mpLobbySizeText.text = _numberOfPlayers.ToString(); //display how many are allowed in MP lobby
             FindObjectOfType<AudioManager>().Play("addPlayerSound");
+             _localNameInputAnimator.SetInteger("PlayerAmount", _numberOfPlayers); //Animate how many player name inputs are visable
+            _ingameScoreboardAnimator.SetInteger("PlayerAmount", _numberOfPlayers);
+            _turnOrderAnimator.SetInteger("PlayerAmount", _numberOfPlayers); //Make sure that turn animation is on the correct anim size for player amount
         }
         else
         {
             FindObjectOfType<AudioManager>().Play("noPlayerSpaceSound");
-        }
-        if (_localGame) //if local
-        {
-            _localNameInputAnimator.SetInteger("PlayerAmount", _numberOfPlayers); //Animate how many player name inputs are visable
-            _ingameScoreboardAnimator.SetInteger("PlayerAmount", _numberOfPlayers);
-            _turnOrderAnimator.SetInteger("PlayerAmount", _numberOfPlayers); //Make sure that turn animation is on the correct anim size for player amount
         }
 
     }
@@ -201,16 +198,14 @@ public class GameScript : MonoBehaviour
             _numberOfPlayerText.text = _numberOfPlayers.ToString(); //display how many are allowed in local lobby
             _mpLobbySizeText.text = _numberOfPlayers.ToString(); //display how many are allowed in MP lobby
             FindObjectOfType<AudioManager>().Play("minusPlayerSound");
+            
+            _localNameInputAnimator.SetInteger("PlayerAmount", _numberOfPlayers); //Animate how many player name inputs are visable
+            _ingameScoreboardAnimator.SetInteger("PlayerAmount", _numberOfPlayers);
+            _turnOrderAnimator.SetInteger("PlayerAmount", _numberOfPlayers); //Make sure that turn animation is on the correct anim size for player amount
         }
         else
         {
             FindObjectOfType<AudioManager>().Play("noPlayerSpaceSound");
-        }
-        if (_localGame)
-        {
-            _localNameInputAnimator.SetInteger("PlayerAmount", _numberOfPlayers); //Animate how many player name inputs are visable
-            _ingameScoreboardAnimator.SetInteger("PlayerAmount", _numberOfPlayers);
-            _turnOrderAnimator.SetInteger("PlayerAmount", _numberOfPlayers); //Make sure that turn animation is on the correct anim size for player amount
         }
     }
     public void GameStartButton()//start game button from board setting panel
